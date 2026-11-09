@@ -22,11 +22,18 @@ if [[ "$config" == "release" ]]; then
 fi
 
 swift build -c "$config" "${arch_flags[@]}"
-binary="$(swift build -c "$config" "${arch_flags[@]}" --show-bin-path)/Sky"
+bin_path="$(swift build -c "$config" "${arch_flags[@]}" --show-bin-path)"
 
 rm -rf -- "${app:?}"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-cp "$binary" "$app/Contents/MacOS/Sky"
+cp "$bin_path/Sky" "$app/Contents/MacOS/Sky"
+# Packages with resources (KeyboardShortcuts' localised strings) look for their
+# bundles in Contents/Resources, and stop the app if one is missing.
+shopt -s nullglob
+for bundle in "$bin_path"/*.bundle; do
+  cp -R "$bundle" "$app/Contents/Resources/"
+done
+shopt -u nullglob
 cp Resources/Info.plist "$app/Contents/Info.plist"
 if [[ -f Resources/AppIcon.icns ]]; then
   cp Resources/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
