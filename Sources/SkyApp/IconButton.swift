@@ -23,11 +23,21 @@ struct IconButton: View {
                 }
                 .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableStyle())
         .modifier(StandaloneGlass(isOn: standalone))
         .onHover { isHovered = $0 }
         .help(label)
         .accessibilityLabel(label)
+    }
+}
+
+/// Shrinks a button slightly the moment it is pressed, so the press registers
+/// before the click completes.
+private struct PressableStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.94 : 1)
+            .animation(Motion.press, value: configuration.isPressed)
     }
 }
 

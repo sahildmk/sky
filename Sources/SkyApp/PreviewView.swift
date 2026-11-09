@@ -47,8 +47,6 @@ struct PreviewView: View {
                         .shadow(color: .black.opacity(0.25), radius: 10, y: 4)
                         .onTapGesture(count: 2) { perform(.openInDefaultApp) }
                         .onDrag { NSItemProvider(contentsOf: record.url) ?? NSItemProvider() }
-                        .id(record.path)
-                        .transition(.opacity)
                 }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
@@ -70,8 +68,11 @@ struct PreviewView: View {
         }
     }
 
+    // Close sits top-left, where it is on every macOS window.
     private func header(for record: ScreenshotRecord) -> some View {
         HStack(alignment: .top) {
+            IconButton(symbol: "xmark", label: "Close", size: 28, standalone: true) { perform(.close) }
+            Spacer()
             TimelineView(.periodic(from: .now, by: 30)) { context in
                 HStack(spacing: 6) {
                     Text(ScreenshotCard.age(of: record.createdAt, now: context.date))
@@ -85,8 +86,6 @@ struct PreviewView: View {
                 .padding(.vertical, 6)
                 .skyGlass(in: Capsule())
             }
-            Spacer()
-            IconButton(symbol: "xmark", label: "Close", size: 28, standalone: true) { perform(.close) }
         }
         .padding(22)
     }

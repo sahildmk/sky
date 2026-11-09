@@ -1,6 +1,7 @@
 import AppKit
 import Observation
 import SkyCore
+import SwiftUI
 
 /// The screenshots on the shelf, newest first, and their thumbnails.
 @MainActor
@@ -51,7 +52,7 @@ final class ShelfStore {
             let url = ScreenshotFiles.canonical(URL(fileURLWithPath: rawPath))
             let path = url.path
             if !FileManager.default.fileExists(atPath: path) {
-                drop(path)
+                withAnimation(Motion.rearrange) { drop(path) }
                 continue
             }
             guard ScreenshotFiles.isCandidate(url),
@@ -93,7 +94,7 @@ final class ShelfStore {
         var updated = items
         updated.append(record)
         updated.sort { $0.createdAt > $1.createdAt }
-        items = Array(updated.prefix(Self.capacity))
+        withAnimation(Motion.arrive) { items = Array(updated.prefix(Self.capacity)) }
         loadThumbnail(record)
         if items.contains(where: { $0.path == record.path }) {
             onNewScreenshot?()

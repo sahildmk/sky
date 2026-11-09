@@ -27,6 +27,7 @@ enum PreviewCommand {
 /// A borderless window that can take keyboard focus without activating Sky,
 /// so the app you were in stays frontmost while you look at a screenshot.
 final class PreviewPanel: NSPanel {
+    /// Called for each keyboard command.
     var perform: (PreviewCommand) -> Void = { _ in }
 
     init() {
@@ -111,11 +112,9 @@ final class PreviewController: NSObject, NSWindowDelegate {
         let panel = self.panel ?? makePanel()
         let wasVisible = state.isVisible
 
-        // Switching screenshots crossfades the image; the window stays put.
-        withAnimation(wasVisible ? Motion.crossfade : nil) {
-            state.record = record
-            state.image = store.thumbnails[record.path]
-        }
+        // Switching screenshots swaps the image in place; the window stays put.
+        state.record = record
+        state.image = store.thumbnails[record.path]
         state.isCopied = false
         state.defaultAppName = NSWorkspace.shared.urlForApplication(toOpen: record.url)
             .map { FileManager.default.displayName(atPath: $0.path).replacingOccurrences(of: ".app", with: "") }
@@ -140,17 +139,38 @@ final class PreviewController: NSObject, NSWindowDelegate {
         loadFullImage(record, pixelSize: max(shown.width, shown.height) * state.backingScale)
     }
 
-    func close() {
+    /// Closes the preview. A close from the keyboard is instant: it happens
+    /// often, and an animation would only make the key feel slow.
+    func close(animated: Bool = true) {
         guard state.isVisible else { return }
         stopWatchingForOutsideClicks()
+        hideTask?.cancel()
+        guard animated else {
+            state.isVisible = false
+            finishClosing()
+            return
+        }
         withAnimation(Motion.previewOut) { state.isVisible = false }
         hideTask = Task { @MainActor in
-            try? await Task.sleep(for: .seconds(0.2))
+            try? await Task.sleep(for: .seconds(Motion.previewOutDuration + 0.03))
             guard !Task.isCancelled, !self.state.isVisible else { return }
-            self.panel?.orderOut(nil)
-            self.state.record = nil
-            self.state.image = nil
-            self.state.isPointerInside = false
+            self.finishClosing()
+        }
+    }
+
+    private func finishClosing() {
+        panel?.orderOut(nil)
+        state.record = nil
+        state.image = nil
+        state.isPointerInside = false
+    }
+
+    /// Keys pressed while the preview has focus.
+    private func performFromKeyboard(_ command: PreviewCommand) {
+        if command == .close {
+            close(animated: false)
+        } else {
+            perform(command)
         }
     }
 
@@ -214,7 +234,7 @@ final class PreviewController: NSObject, NSWindowDelegate {
     private func makePanel() -> PreviewPanel {
         let panel = PreviewPanel()
         panel.delegate = self
-        panel.perform = { [weak self] command in self?.perform(command) }
+        panel.perform = { [weak self] command in self?.performFromKeyboard(command) }
         panel.contentView = FirstClickHostingView(rootView: PreviewView(state: state) { [weak self] command in
             self?.perform(command)
         })

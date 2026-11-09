@@ -92,26 +92,3 @@ struct ShelfActions {
         withAnimation(Motion.rearrange) { store.remove(record) }
     }
 }
-
-/// Animation curves, collapsed to quick fades when Reduce Motion is on.
-@MainActor
-enum Motion {
-    private static var reduceMotion: Bool {
-        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-    }
-
-    private static func spring(_ response: Double, _ damping: Double) -> Animation {
-        reduceMotion ? .easeOut(duration: 0.15) : .spring(response: response, dampingFraction: damping)
-    }
-
-    static var present: Animation { spring(0.5, 0.78) }
-    static var dismiss: Animation { reduceMotion ? .easeIn(duration: 0.15) : .smooth(duration: 0.32) }
-    static var expand: Animation { spring(0.42, 0.8) }
-    static var collapse: Animation { spring(0.36, 0.88) }
-    static var hover: Animation { spring(0.22, 0.8) }
-    static var rearrange: Animation { spring(0.4, 0.82) }
-    static var arrive: Animation { spring(0.55, 0.7) }
-    static var previewIn: Animation { spring(0.34, 0.82) }
-    static var previewOut: Animation { reduceMotion ? .easeIn(duration: 0.12) : .easeIn(duration: 0.16) }
-    static var crossfade: Animation { .easeInOut(duration: reduceMotion ? 0.1 : 0.18) }
-}

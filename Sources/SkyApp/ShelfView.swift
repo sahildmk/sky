@@ -39,21 +39,23 @@ struct ShelfView: View {
                 .opacity(card.isVisible ? 1 : 0)
                 .position(x: card.frame.midX, y: card.frame.midY)
                 .zIndex(isHovered ? 1 : card.zIndex)
-                // Cards fan out one after another, newest first.
+                // Cards fan out one after another, newest first, and gather back together at once.
                 .animation(
-                    (state.isExpanded ? Motion.expand : Motion.collapse)
-                        .delay(state.isExpanded ? Double(min(index, 8)) * 0.018 : 0),
+                    state.isExpanded
+                        ? Motion.expand.delay(Motion.fanOutDelay(forCardAt: index))
+                        : Motion.collapse,
                     value: state.isExpanded
                 )
                 .transition(.asymmetric(
-                    insertion: .scale(scale: 1.25).combined(with: .opacity).combined(with: .offset(y: -24)),
-                    removal: .scale(scale: 0.7).combined(with: .opacity)
+                    // Dropped onto the stack from just above it.
+                    insertion: .scale(scale: 1.12).combined(with: .opacity).combined(with: .offset(y: -16)),
+                    removal: .scale(scale: 0.9).combined(with: .opacity)
                 ))
             }
         }
-        .animation(Motion.arrive, value: store.items.map(\.path))
         .frame(width: state.containerWidth, height: ShelfController.panelHeight, alignment: .topLeading)
-        .offset(y: state.isPresented ? 0 : -(layout.contentBottom + 40))
+        // Slides down from the menu bar and back up into it. With Reduce Motion it only fades.
+        .offset(y: state.isPresented || Motion.reduceMotion ? 0 : -(layout.contentBottom + 40))
         .opacity(state.isPresented ? 1 : 0)
     }
 }

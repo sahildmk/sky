@@ -24,7 +24,17 @@ struct ScreenshotCard: View {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .strokeBorder(.white.opacity(isHovered ? 0.35 : 0.18), lineWidth: 0.5)
         }
+        // Remove sits top-left, where macOS puts the close button on notifications.
         .overlay(alignment: .topLeading) {
+            if showsControls {
+                IconButton(symbol: "xmark", label: "Remove from shelf", size: 20, standalone: true) {
+                    actions.removeFromShelf(record)
+                }
+                .padding(6)
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            }
+        }
+        .overlay(alignment: .topTrailing) {
             if showsControls {
                 TimelineView(.periodic(from: .now, by: 30)) { context in
                     Text(Self.age(of: record.createdAt, now: context.date))
@@ -35,15 +45,6 @@ struct ScreenshotCard: View {
                         .padding(6)
                 }
                 .transition(.opacity)
-            }
-        }
-        .overlay(alignment: .topTrailing) {
-            if showsControls {
-                IconButton(symbol: "xmark", label: "Remove from shelf", size: 20, standalone: true) {
-                    actions.removeFromShelf(record)
-                }
-                .padding(6)
-                .transition(.opacity.combined(with: .scale(scale: 0.6)))
             } else if let badgeCount {
                 Text("\(badgeCount)")
                     .font(.system(size: 11, weight: .bold, design: .rounded))
@@ -56,7 +57,7 @@ struct ScreenshotCard: View {
                     .background(Color(nsColor: .controlAccentColor), in: Capsule())
                     .overlay(Capsule().strokeBorder(.white.opacity(0.5), lineWidth: 1))
                     .offset(x: 8, y: -8)
-                    .transition(.scale.combined(with: .opacity))
+                    .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
         }
         .overlay(alignment: .bottom) {

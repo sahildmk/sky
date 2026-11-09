@@ -102,7 +102,7 @@ final class ShelfController {
             state.hoveredPath = nil
         }
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(0.45))
+            try? await Task.sleep(for: .seconds(Motion.dismissDuration + 0.05))
             guard !self.state.isPresented else { return }
             self.panel.orderOut(nil)
             self.stopTrackingPointer()
