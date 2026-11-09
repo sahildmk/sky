@@ -83,7 +83,10 @@ struct ScreenshotCard: View {
                     .padding(.vertical, 4)
                     .skyGlass(in: Capsule())
                     .padding(.bottom, 7)
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.9)).animation(Motion.copiedPillIn),
+                        removal: .opacity.animation(Motion.hover)
+                    ))
             }
         }
         // The shadow comes from a backing shape so the controls above don't cast one.

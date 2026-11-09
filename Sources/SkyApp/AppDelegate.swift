@@ -24,6 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var locationCheck: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        store.isOnScreen = { [weak self] in self?.shelf.isPresented ?? false }
         store.onNewScreenshot = { [weak self] record in
             guard let self else { return }
             // ⇧⌘3 saves one file per display; only the newest ends up on the clipboard.

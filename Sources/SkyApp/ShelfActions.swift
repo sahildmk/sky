@@ -72,9 +72,11 @@ struct ShelfActions {
         operations.revealInFinder(record)
     }
 
-    func copy(_ record: ScreenshotRecord) {
+    /// Copies the screenshot and shows a tick. Pass `animated: false` for a
+    /// copy made from the keyboard, so the tick appears without a transition.
+    func copy(_ record: ScreenshotRecord, animated: Bool = true) {
         operations.copy(record)
-        withAnimation(Motion.hover) { state.copiedPath = record.path }
+        withAnimation(animated ? Motion.symbolSwap : nil) { state.copiedPath = record.path }
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(1.4))
             if state.copiedPath == record.path {

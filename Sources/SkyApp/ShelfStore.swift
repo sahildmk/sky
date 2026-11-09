@@ -15,6 +15,10 @@ final class ShelfStore {
     private(set) var items: [ScreenshotRecord] = []
     private(set) var thumbnails: [String: NSImage] = [:]
 
+    /// Whether the shelf is showing. A new screenshot only drops onto the
+    /// stack when it is; otherwise the shelf sliding in carries the arrival.
+    @ObservationIgnored var isOnScreen: () -> Bool = { true }
+
     /// Called after a newly captured screenshot lands on the shelf.
     @ObservationIgnored var onNewScreenshot: ((ScreenshotRecord) -> Void)?
 
@@ -94,7 +98,7 @@ final class ShelfStore {
         var updated = items
         updated.append(record)
         updated.sort { $0.createdAt > $1.createdAt }
-        withAnimation(Motion.arrive) { items = Array(updated.prefix(Self.capacity)) }
+        withAnimation(isOnScreen() ? Motion.arrive : nil) { items = Array(updated.prefix(Self.capacity)) }
         loadThumbnail(record)
         if items.contains(where: { $0.path == record.path }) {
             onNewScreenshot?(record)

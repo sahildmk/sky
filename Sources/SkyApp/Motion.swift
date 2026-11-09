@@ -32,6 +32,10 @@ enum Motion {
         reduceMotion ? 0 : Double(min(index, 4)) * 0.025
     }
 
+    /// How long the fan-out takes to settle enough for a card's controls to
+    /// appear without competing with the movement.
+    static var fanOutSettleTime: Double { reduceMotion ? 0 : 0.15 }
+
     /// A card lifting under the pointer, and controls fading in over it.
     static var hover: Animation { easeOut(0.15) }
 
@@ -47,6 +51,13 @@ enum Motion {
     /// The preview closing from a click.
     static var previewOut: Animation { easeOut(previewOutDuration) }
     static let previewOutDuration: Double = 0.14
+
+    /// The "Copied" pill on a newly arrived screenshot, which waits for the
+    /// card to land before appearing.
+    static var copiedPillIn: Animation { easeOut(0.15).delay(reduceMotion ? 0 : 0.3) }
+
+    /// A button's symbol changing, such as copy turning into a tick.
+    static var symbolSwap: Animation { easeOut(0.12) }
 
     /// A button going down under the pointer.
     static var press: Animation { easeOut(0.1) }

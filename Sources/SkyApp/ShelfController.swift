@@ -88,6 +88,8 @@ final class ShelfController {
     private var pointerTimer: Timer?
     private var hideDeadline: Date?
     private var collapseDeadline: Date?
+    /// When the deck last started fanning out.
+    private var expandedAt: Date?
     private var edgeReveal = EdgeReveal()
     private var edgeTimer: Timer?
 
@@ -165,7 +167,7 @@ final class ShelfController {
             NSSound.beep()
             return
         }
-        actions.copy(record)
+        actions.copy(record, animated: false)
     }
 
     // MARK: Keyboard focus
@@ -251,8 +253,12 @@ final class ShelfController {
             if !keepsVisible { hideDeadline = now + Self.lingerAfterHover }
             if !state.isExpanded, !store.items.isEmpty {
                 withAnimation(Motion.expand) { state.isExpanded = true }
+                expandedAt = now
             }
-            let hovered = layout.cardIndex(at: point).map { store.items[$0].path }
+            // A card only counts as hovered once the fan-out has settled, so its
+            // controls never fade in while the cards are still moving.
+            let settled = expandedAt.map { now.timeIntervalSince($0) >= Motion.fanOutSettleTime } ?? true
+            let hovered = settled ? layout.cardIndex(at: point).map { store.items[$0].path } : nil
             if hovered != state.hoveredPath {
                 withAnimation(Motion.hover) { state.hoveredPath = hovered }
             }

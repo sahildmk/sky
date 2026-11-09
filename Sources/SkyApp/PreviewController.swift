@@ -169,10 +169,22 @@ final class PreviewController: NSObject, NSWindowDelegate {
 
     /// Keys pressed while the preview has focus.
     private func performFromKeyboard(_ command: PreviewCommand) {
-        if command == .close {
-            close(animated: false)
-        } else {
-            perform(command)
+        switch command {
+        case .close: close(animated: false)
+        case .copy: copyCurrent(animated: false)
+        default: perform(command)
+        }
+    }
+
+    private func copyCurrent(animated: Bool) {
+        guard let record = state.record else { return }
+        operations.copy(record)
+        withAnimation(animated ? Motion.symbolSwap : nil) { state.isCopied = true }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.4))
+            if self.state.record?.path == record.path {
+                withAnimation(Motion.hover) { self.state.isCopied = false }
+            }
         }
     }
 
@@ -186,14 +198,7 @@ final class PreviewController: NSObject, NSWindowDelegate {
         case .next:
             step(1)
         case .copy:
-            operations.copy(record)
-            withAnimation(Motion.hover) { state.isCopied = true }
-            Task { @MainActor in
-                try? await Task.sleep(for: .seconds(1.4))
-                if self.state.record?.path == record.path {
-                    withAnimation(Motion.hover) { self.state.isCopied = false }
-                }
-            }
+            copyCurrent(animated: true)
         case .revealInFinder:
             operations.revealInFinder(record)
             close()
