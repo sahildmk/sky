@@ -53,7 +53,7 @@ open build/Sky.app
 
 The first time Sky looks at your screenshots folder, macOS asks whether Sky may access it (for example "Sky would like to access files in your Desktop folder"). Allow it, or Sky can't see your screenshots.
 
-The build is signed ad hoc, which is enough to run it on the Mac that built it. To sign with your own certificate:
+The build is universal (Apple silicon and Intel) and signed ad hoc, which is enough to run it on the Mac that built it. To sign with your own Developer ID certificate, which adds a secure timestamp and is what notarisation needs:
 
 ```sh
 SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" scripts/build-app.sh
