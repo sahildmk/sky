@@ -10,6 +10,7 @@ Sky is a native macOS app written in Swift, SwiftUI and AppKit, and uses Liquid 
 
 **The shelf**
 - A new screenshot drops onto a stack at the top of your main display. The stack hides itself a few seconds later.
+- Bring the shelf back at any time the way you'd bring up an auto-hiding Dock: rest the pointer against the middle of the top edge of your main display for a moment. Passing through on the way to a menu, or dragging a window up there, doesn't count.
 - Point at the stack to fan it out into a row of your most recent screenshots.
 - Point at a screenshot to see how old it is and to copy it, show it in Finder, move it to the Trash or take it off the shelf.
 - Drag a screenshot from the shelf straight into Slack, Mail, Finder or anywhere else that accepts files.
@@ -23,6 +24,7 @@ Sky is a native macOS app written in Swift, SwiftUI and AppKit, and uses Liquid 
 
 **The menu bar**
 - Show or hide the shelf, clear it, or open your screenshots folder.
+- *Show Shelf at Top Edge* turns the top-edge reveal on or off.
 - *Keep Shelf Visible* stops the shelf hiding itself.
 - *Skip macOS Floating Thumbnail* turns off the small preview macOS shows in the corner after a capture. macOS waits for that thumbnail to go away (about five seconds) before it saves the file, so turning it off puts screenshots on the shelf straight away. This changes the same setting as the Options menu in the Screenshot app.
 - *Open at Login*.

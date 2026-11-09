@@ -27,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         store.onNewScreenshot = { [weak self] in self?.shelf.show() }
         watch(ScreenshotLocation.current())
         installStatusItem()
+        shelf.startWatchingTopEdge()
 
         // The save location can be changed at any time from the Screenshot app's Options menu.
         let timer = Timer(timeInterval: 5, repeats: true) { [weak self] _ in
@@ -74,6 +75,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(item("Open Screenshots Folder", action: #selector(openScreenshotsFolder), key: ""))
         menu.addItem(.separator())
 
+        let topEdge = item("Show Shelf at Top Edge", action: #selector(toggleTopEdge), key: "")
+        topEdge.state = shelf.revealsAtTopEdge ? .on : .off
+        topEdge.toolTip = "Rest the pointer against the middle of the top edge of your main display to bring the shelf down."
+        menu.addItem(topEdge)
+
         let keepVisible = item("Keep Shelf Visible", action: #selector(toggleKeepVisible), key: "")
         keepVisible.state = shelf.keepsVisible ? .on : .off
         menu.addItem(keepVisible)
@@ -105,6 +111,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func openScreenshotsFolder() {
         NSWorkspace.shared.open(ScreenshotLocation.current())
+    }
+
+    @objc private func toggleTopEdge() {
+        shelf.revealsAtTopEdge.toggle()
     }
 
     @objc private func toggleKeepVisible() {

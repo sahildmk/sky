@@ -52,6 +52,7 @@ final class ShelfController {
     /// How long the shelf stays up after a capture, or after the pointer leaves it.
     nonisolated static let lingerAfterCapture: TimeInterval = 6
     nonisolated static let lingerAfterHover: TimeInterval = 2.5
+    nonisolated static let lingerAfterEdgeReveal: TimeInterval = 1.5
     nonisolated static let collapseDelay: TimeInterval = 0.18
 
     let state = ShelfState()
@@ -60,6 +61,17 @@ final class ShelfController {
     private var pointerTimer: Timer?
     private var hideDeadline: Date?
     private var collapseDeadline: Date?
+    private var edgeReveal = EdgeReveal()
+    private var edgeTimer: Timer?
+
+    /// Whether resting the pointer at the top edge brings the shelf down.
+    var revealsAtTopEdge: Bool {
+        get { !UserDefaults.standard.bool(forKey: "topEdgeRevealDisabled") }
+        set {
+            UserDefaults.standard.set(!newValue, forKey: "topEdgeRevealDisabled")
+            newValue ? startWatchingTopEdge() : stopWatchingTopEdge()
+        }
+    }
 
     var keepsVisible: Bool {
         get { UserDefaults.standard.bool(forKey: "keepsShelfVisible") }
@@ -161,6 +173,12 @@ final class ShelfController {
         let isOver = layout.activeRect.contains(point)
         panel.ignoresMouseEvents = !isOver
 
+        // Resting at the top edge holds the shelf open, as it does the Dock.
+        if !keepsVisible, let screen = NSScreen.screens.first,
+           edgeReveal.band(on: screen.frame).insetBy(dx: 0, dy: -1).contains(mouse) {
+            hideDeadline = now + Self.lingerAfterEdgeReveal
+        }
+
         if isOver {
             collapseDeadline = nil
             if !keepsVisible { hideDeadline = now + Self.lingerAfterHover }
@@ -192,6 +210,41 @@ final class ShelfController {
         }
         if let hideDeadline, now >= hideDeadline {
             hide()
+        }
+    }
+
+    // MARK: Top edge
+
+    // macOS does not deliver pointer movement over other apps' windows to an
+    // app without the Input Monitoring permission, so the pointer position is
+    // sampled instead: 12 times a second, with enough tolerance for macOS to
+    // fold the wake-ups in with other work.
+
+    func startWatchingTopEdge() {
+        guard edgeTimer == nil, revealsAtTopEdge else { return }
+        let timer = Timer(timeInterval: 1.0 / 12.0, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.checkTopEdge() }
+        }
+        timer.tolerance = 0.04
+        RunLoop.main.add(timer, forMode: .common)
+        edgeTimer = timer
+    }
+
+    func stopWatchingTopEdge() {
+        edgeTimer?.invalidate()
+        edgeTimer = nil
+    }
+
+    private func checkTopEdge() {
+        guard let screen = NSScreen.screens.first else { return }
+        let decision = edgeReveal.update(
+            pointer: NSEvent.mouseLocation,
+            screen: screen.frame,
+            buttonHeld: NSEvent.pressedMouseButtons != 0,
+            now: Date()
+        )
+        if decision == .reveal, !state.isPresented {
+            show(lingering: Self.lingerAfterEdgeReveal)
         }
     }
 }
