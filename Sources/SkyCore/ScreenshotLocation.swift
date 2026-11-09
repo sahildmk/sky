@@ -3,7 +3,7 @@ import Foundation
 /// Where macOS saves screenshots: the `location` set in the Screenshot app's
 /// Options menu, or the Desktop when none is set.
 public enum ScreenshotLocation {
-    static let domain = "com.apple.screencapture" as CFString
+    static let domain = "com.apple.screencapture"
 
     /// Resolves the saved `location` preference to a directory. Falls back to
     /// `~/Desktop` when the preference is missing or does not name a directory.
@@ -32,8 +32,8 @@ public enum ScreenshotLocation {
 
     /// The directory macOS is saving screenshots to right now.
     public static func current() -> URL {
-        CFPreferencesAppSynchronize(domain)
-        let preference = CFPreferencesCopyAppValue("location" as CFString, domain) as? String
+        CFPreferencesAppSynchronize(domain as CFString)
+        let preference = CFPreferencesCopyAppValue("location" as CFString, domain as CFString) as? String
         return directory(preference: preference, home: FileManager.default.homeDirectoryForCurrentUser)
     }
 

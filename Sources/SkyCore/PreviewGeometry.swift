@@ -5,7 +5,7 @@ import CoreGraphics
 /// The window is one fixed box in the middle of the screen, the same size for
 /// every screenshot, so stepping between screenshots never resizes it.
 public enum PreviewGeometry {
-    public struct Container: Equatable {
+    public struct Container: Equatable, Sendable {
         public var aspectRatio: CGFloat = 16.0 / 9.0
         /// Share of the screen's width the box takes up.
         public var widthFraction: CGFloat = 0.62

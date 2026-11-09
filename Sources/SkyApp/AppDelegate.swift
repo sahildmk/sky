@@ -146,17 +146,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
 /// The "Show Floating Thumbnail" option in the Screenshot app's Options menu.
 enum FloatingThumbnail {
-    private static let domain = "com.apple.screencapture" as CFString
-    private static let key = "show-thumbnail" as CFString
+    private static let domain = "com.apple.screencapture"
+    private static let key = "show-thumbnail"
 
     static var isShown: Bool {
         get {
-            CFPreferencesAppSynchronize(domain)
-            return (CFPreferencesCopyAppValue(key, domain) as? Bool) ?? true
+            CFPreferencesAppSynchronize(domain as CFString)
+            return (CFPreferencesCopyAppValue(key as CFString, domain as CFString) as? Bool) ?? true
         }
         set {
-            CFPreferencesSetAppValue(key, newValue as CFBoolean, domain)
-            CFPreferencesAppSynchronize(domain)
+            CFPreferencesSetAppValue(key as CFString, newValue as CFBoolean, domain as CFString)
+            CFPreferencesAppSynchronize(domain as CFString)
         }
     }
 }

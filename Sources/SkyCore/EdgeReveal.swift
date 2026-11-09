@@ -13,8 +13,8 @@ import Foundation
 ///
 /// Coordinates are global screen coordinates with the origin at the bottom
 /// left, as `NSEvent.mouseLocation` reports them.
-public struct EdgeReveal: Equatable {
-    public enum Decision: Equatable {
+public struct EdgeReveal: Equatable, Sendable {
+    public enum Decision: Equatable, Sendable {
         /// Nothing to do.
         case idle
         /// The pointer is in the band but has not stayed long enough yet.

@@ -27,6 +27,5 @@ let package = Package(
             dependencies: ["SkyCore"],
             path: "Tests/SkyCoreTests"
         ),
-    ],
-    swiftLanguageModes: [.v5]
+    ]
 )

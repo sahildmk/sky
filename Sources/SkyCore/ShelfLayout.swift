@@ -6,8 +6,8 @@ import CoreGraphics
 /// Collapsed, the cards sit in a deck centred at the top, newest on top, with
 /// a few older cards peeking out underneath. Expanded, they fan out into a
 /// centred row, newest on the left; cards that would not fit are hidden.
-public struct ShelfLayout: Equatable {
-    public struct Card: Equatable {
+public struct ShelfLayout: Equatable, Sendable {
+    public struct Card: Equatable, Sendable {
         public var frame: CGRect
         /// Degrees, clockwise.
         public var rotation: Double
@@ -17,7 +17,7 @@ public struct ShelfLayout: Equatable {
         public var zIndex: Double
     }
 
-    public struct Metrics: Equatable {
+    public struct Metrics: Equatable, Sendable {
         public var topInset: CGFloat = 12
         public var sideMargin: CGFloat = 48
         /// How far beyond the cards the pointer still counts as "on the shelf".
