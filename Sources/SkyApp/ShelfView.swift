@@ -71,8 +71,6 @@ private struct EmptyShelf: View {
         .font(.system(size: 12, weight: .medium))
         .padding(.horizontal, 14)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.regularMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.2), radius: 10, y: 4)
+        .skyGlass(in: Capsule())
     }
 }

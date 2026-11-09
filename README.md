@@ -4,7 +4,7 @@ A better home for your screenshots on macOS.
 
 Keep taking screenshots the way you already do, with ⇧⌘3, ⇧⌘4 or ⇧⌘5. Sky notices each one as soon as macOS saves it and shows your recent screenshots in a small stack at the top of your main display. Point at the stack and it fans out so you can grab, copy, preview or bin any of them.
 
-Sky is a native macOS app written in Swift, SwiftUI and AppKit. It lives in the menu bar, has no Dock icon and never takes focus away from the app you're working in.
+Sky is a native macOS app written in Swift, SwiftUI and AppKit, and uses Liquid Glass on macOS 26 and later. It lives in the menu bar, has no Dock icon and never takes focus away from the app you're working in.
 
 ## What it does
 
@@ -17,7 +17,7 @@ Sky is a native macOS app written in Swift, SwiftUI and AppKit. It lives in the 
 - The shelf lets clicks through everywhere except over the screenshots themselves.
 
 **The preview**
-- Click a screenshot to open it in a minimal preview window.
+- Click a screenshot to open it in a minimal preview window: a fixed 16:9 pane in the middle of the screen that every screenshot fits inside, so stepping between screenshots never resizes it. Small screenshots are shown at their real size rather than enlarged.
 - ← and → step through your recent screenshots. ⌘C copies, ⌘⌫ moves to the Trash, ⌘O or a double-click opens the file in its usual app, and Esc or Space closes the preview.
 - Clicking anywhere else closes it.
 
@@ -67,7 +67,9 @@ swift test                  # run the unit tests
 swift run SkySnapshots out  # render the shelf and preview to PNGs in ./out
 ```
 
-`SkySnapshots` draws the shelf (collapsed, expanded and hovered) and the preview window to image files, using the newest screenshots in your screenshots folder. Nothing appears on screen, so you can check a visual change without the app taking over your display. Pass a folder first to use other screenshots: `swift run SkySnapshots path/to/screenshots out`. Frosted-glass backgrounds need a live window, so in these images they appear as flat fills.
+`SkySnapshots` draws the shelf (collapsed, expanded and hovered) and the preview window to image files, using the newest screenshots in your screenshots folder. Pass a folder first to use other screenshots: `swift run SkySnapshots path/to/screenshots out`.
+
+Liquid Glass only draws in a live window, so each view is shown in a window placed behind the desktop wallpaper and captured from there with ScreenCaptureKit. Nothing appears in front of you, so you can check a visual change while you keep working. The app running it (your terminal, for example) needs the Screen Recording permission.
 
 ### Layout
 

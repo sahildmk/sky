@@ -31,7 +31,7 @@ struct ScreenshotCard: View {
                         .font(.system(size: 10, weight: .semibold))
                         .padding(.horizontal, 7)
                         .padding(.vertical, 3)
-                        .background(.ultraThinMaterial, in: Capsule())
+                        .skyGlass(in: Capsule())
                         .padding(6)
                 }
                 .transition(.opacity)
@@ -39,7 +39,7 @@ struct ScreenshotCard: View {
         }
         .overlay(alignment: .topTrailing) {
             if showsControls {
-                IconButton(symbol: "xmark", label: "Remove from shelf", size: 20, filled: true) {
+                IconButton(symbol: "xmark", label: "Remove from shelf", size: 20, standalone: true) {
                     actions.removeFromShelf(record)
                 }
                 .padding(6)
@@ -50,10 +50,11 @@ struct ScreenshotCard: View {
                     .monospacedDigit()
                     .foregroundStyle(.white)
                     .padding(.horizontal, 6)
-                    .frame(minWidth: 20, minHeight: 20)
-                    .background(Color.accentColor, in: Capsule())
-                    .overlay(Capsule().strokeBorder(.white.opacity(0.6), lineWidth: 1))
-                    .shadow(color: .black.opacity(0.25), radius: 3, y: 1)
+                    .frame(minWidth: 22, minHeight: 22)
+                    // Solid rather than tinted glass: the shelf is never the active
+                    // window, and macOS greys out glass tint in inactive windows.
+                    .background(Color(nsColor: .controlAccentColor), in: Capsule())
+                    .overlay(Capsule().strokeBorder(.white.opacity(0.5), lineWidth: 1))
                     .offset(x: 8, y: -8)
                     .transition(.scale.combined(with: .opacity))
             }
@@ -69,8 +70,7 @@ struct ScreenshotCard: View {
                     IconButton(symbol: "trash", label: "Move to Trash") { actions.moveToTrash(record) }
                 }
                 .padding(3)
-                .background(.ultraThinMaterial, in: Capsule())
-                .overlay(Capsule().strokeBorder(.white.opacity(0.15), lineWidth: 0.5))
+                .skyGlass(in: Capsule(), interactive: true)
                 .padding(.bottom, 7)
                 .transition(.opacity.combined(with: .offset(y: 6)))
             }

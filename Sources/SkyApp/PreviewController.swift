@@ -16,6 +16,8 @@ final class PreviewState {
     var position: String?
     /// The app a double-click opens the screenshot in, such as "Preview".
     var defaultAppName: String?
+    /// Screen pixels per point on the display the preview is on.
+    var backingScale: CGFloat = 2
 }
 
 enum PreviewCommand {
@@ -81,8 +83,8 @@ final class PreviewPanel: NSPanel {
 final class PreviewController: NSObject, NSWindowDelegate {
     /// Transparent room around the image for its shadow.
     nonisolated static let shadowInset: CGFloat = 40
-    nonisolated static let screenMargin: CGFloat = 72
-    nonisolated static let minimumSize = CGSize(width: 340, height: 200)
+    /// Space between the container's edge and the screenshot inside it.
+    nonisolated static let imageInset: CGFloat = 14
 
     let state = PreviewState()
     private let store: ShelfStore
@@ -109,30 +111,33 @@ final class PreviewController: NSObject, NSWindowDelegate {
         let panel = self.panel ?? makePanel()
         let wasVisible = state.isVisible
 
-        state.record = record
-        state.image = store.thumbnails[record.path]
+        // Switching screenshots crossfades the image; the window stays put.
+        withAnimation(wasVisible ? Motion.crossfade : nil) {
+            state.record = record
+            state.image = store.thumbnails[record.path]
+        }
         state.isCopied = false
         state.defaultAppName = NSWorkspace.shared.urlForApplication(toOpen: record.url)
             .map { FileManager.default.displayName(atPath: $0.path).replacingOccurrences(of: ".app", with: "") }
+        state.backingScale = Self.screen?.backingScaleFactor ?? 2
         updatePosition()
 
-        let content = Self.contentFrame(for: record)
-        let frame = content.insetBy(dx: -Self.shadowInset, dy: -Self.shadowInset)
-        if wasVisible {
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.22
-                context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-                panel.animator().setFrame(frame, display: true)
-            }
-        } else {
-            panel.setFrame(frame, display: true)
+        if !wasVisible {
+            let content = PreviewGeometry.containerFrame(in: Self.screen?.visibleFrame ?? CGRect(x: 0, y: 0, width: 1440, height: 900))
+            panel.setFrame(content.insetBy(dx: -Self.shadowInset, dy: -Self.shadowInset), display: true)
         }
         panel.makeKeyAndOrderFront(nil)
         if !wasVisible {
             withAnimation(Motion.previewIn) { state.isVisible = true }
             watchForOutsideClicks()
         }
-        loadFullImage(record, pixelSize: max(content.width, content.height) * Self.backingScale)
+        let imageArea = panel.frame.insetBy(dx: Self.shadowInset + Self.imageInset, dy: Self.shadowInset + Self.imageInset).size
+        let shown = PreviewGeometry.imageSize(
+            forPixelSize: CGSize(width: record.pixelWidth, height: record.pixelHeight),
+            backingScale: state.backingScale,
+            fittingIn: imageArea
+        )
+        loadFullImage(record, pixelSize: max(shown.width, shown.height) * state.backingScale)
     }
 
     func close() {
@@ -217,19 +222,8 @@ final class PreviewController: NSObject, NSWindowDelegate {
         return panel
     }
 
+    /// The preview opens on the primary display, where the shelf is.
     private static var screen: NSScreen? { NSScreen.screens.first }
-    private static var backingScale: CGFloat { screen?.backingScaleFactor ?? 2 }
-
-    /// Where the image sits on screen, centred on the primary display.
-    static func contentFrame(for record: ScreenshotRecord) -> CGRect {
-        PreviewGeometry.frame(
-            forPixelSize: CGSize(width: record.pixelWidth, height: record.pixelHeight),
-            backingScale: backingScale,
-            in: screen?.visibleFrame ?? CGRect(x: 0, y: 0, width: 1440, height: 900),
-            margin: screenMargin,
-            minimumSize: minimumSize
-        )
-    }
 
     private func loadFullImage(_ record: ScreenshotRecord, pixelSize: CGFloat) {
         let url = record.url

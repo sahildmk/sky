@@ -113,4 +113,5 @@ enum Motion {
     static var arrive: Animation { spring(0.55, 0.7) }
     static var previewIn: Animation { spring(0.34, 0.82) }
     static var previewOut: Animation { reduceMotion ? .easeIn(duration: 0.12) : .easeIn(duration: 0.16) }
+    static var crossfade: Animation { .easeInOut(duration: reduceMotion ? 0.1 : 0.18) }
 }

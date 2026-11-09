@@ -3,7 +3,8 @@ import SkyApp
 import SkyCore
 
 // Usage: SkySnapshots [screenshot-directory] <output-directory>
-// Renders the shelf and preview to PNGs. Nothing is shown on screen.
+// Renders the shelf and preview to PNGs. Nothing appears in front of you:
+// each view is drawn in a window behind the desktop wallpaper.
 
 let arguments = Array(CommandLine.arguments.dropFirst())
 guard let outputPath = arguments.last else {
@@ -13,14 +14,20 @@ guard let outputPath = arguments.last else {
 let directory = arguments.count >= 2
     ? URL(fileURLWithPath: arguments[0], isDirectory: true)
     : ScreenshotLocation.current()
+let output = URL(fileURLWithPath: outputPath, isDirectory: true)
 
 MainActor.assumeIsolated {
-    _ = NSApplication.shared
-    do {
-        let files = try Snapshots.render(screenshotsIn: directory, to: URL(fileURLWithPath: outputPath, isDirectory: true))
-        files.forEach { print($0.path) }
-    } catch {
-        FileHandle.standardError.write(Data("\(error)\n".utf8))
-        exit(1)
+    let app = NSApplication.shared
+    app.setActivationPolicy(.accessory)
+    Task { @MainActor in
+        do {
+            let files = try await Snapshots.render(screenshotsIn: directory, to: output)
+            files.forEach { print($0.path) }
+            exit(0)
+        } catch {
+            FileHandle.standardError.write(Data("\(error)\n".utf8))
+            exit(1)
+        }
     }
+    app.run()
 }
