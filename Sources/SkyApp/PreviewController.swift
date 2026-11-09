@@ -44,6 +44,8 @@ final class PreviewPanel: NSPanel {
         hidesOnDeactivate = false
         isReleasedWhenClosed = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient, .ignoresCycle]
+        // The preview animates itself; the system fade would double it up.
+        animationBehavior = .none
     }
 
     override var canBecomeKey: Bool { true }

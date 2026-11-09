@@ -148,6 +148,15 @@ public struct ShelfLayout: Equatable, Sendable {
         )
     }
 
+    /// The region where the pointer keeps the shelf open: the active region,
+    /// extended straight up by `distance` points, past the top of the shelf.
+    /// Pass the distance to the top of the screen so moving from the shelf
+    /// to the top edge never counts as leaving it.
+    public func hoverRect(extendingUpBy distance: CGFloat) -> CGRect {
+        let top = min(activeRect.minY, -max(distance, 0))
+        return CGRect(x: activeRect.minX, y: top, width: activeRect.width, height: activeRect.maxY - top)
+    }
+
     /// Index of the visible card under `point`, preferring the one drawn on top.
     public func cardIndex(at point: CGPoint) -> Int? {
         cards.indices

@@ -39,6 +39,10 @@ final class ShelfPanel: NSPanel {
         isReleasedWhenClosed = false
         ignoresMouseEvents = true
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
+        // Sky animates the shelf itself. The system fade would play on top of
+        // that, and handing keyboard focus back (ordering the panel out and
+        // straight in) interrupts it, leaving the shelf washed out.
+        animationBehavior = .none
     }
 
     override var canBecomeKey: Bool { true }
@@ -229,8 +233,11 @@ final class ShelfController {
             containerWidth: state.containerWidth,
             expanded: state.isExpanded
         )
-        let isOver = layout.activeRect.contains(point)
-        panel.ignoresMouseEvents = !isOver
+        panel.ignoresMouseEvents = !layout.activeRect.contains(point)
+        // The strip between the shelf and the top of the screen counts as on
+        // the shelf, so moving up to the top edge doesn't collapse it.
+        let distanceToScreenTop = (NSScreen.screens.first?.frame.maxY ?? frame.maxY) - frame.maxY
+        let isOver = layout.hoverRect(extendingUpBy: distanceToScreenTop).contains(point)
 
         // Resting at the top edge holds the shelf open, as it does the Dock.
         if !keepsVisible, let screen = NSScreen.screens.first,

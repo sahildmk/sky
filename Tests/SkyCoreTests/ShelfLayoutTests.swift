@@ -80,6 +80,20 @@ import Testing
         #expect(expanded.cardIndex(at: CGPoint(x: 1, y: 1)) == nil)
     }
 
+    @Test func hoverRegionReachesUpToTheTopOfTheScreen() {
+        let layout = ShelfLayout.make(aspectRatios: [1.6, 1.6], containerWidth: width, expanded: true)
+        let menuBar: CGFloat = 30
+        let hover = layout.hoverRect(extendingUpBy: menuBar)
+
+        // Straight above the shelf, in the menu bar, still counts as on the shelf.
+        #expect(hover.contains(CGPoint(x: layout.activeRect.midX, y: -menuBar + 0.5)))
+        #expect(hover.contains(layout.activeRect))
+        // Above the shelf but off to the side does not.
+        #expect(!hover.contains(CGPoint(x: layout.activeRect.minX - 1, y: -10)))
+        // Nor does anywhere below the shelf.
+        #expect(!hover.contains(CGPoint(x: layout.activeRect.midX, y: layout.activeRect.maxY + 1)))
+    }
+
     @Test func emptyShelfStillHasSomewhereToPoint() {
         let layout = ShelfLayout.make(aspectRatios: [], containerWidth: width, expanded: true)
         #expect(layout.cards.isEmpty)
