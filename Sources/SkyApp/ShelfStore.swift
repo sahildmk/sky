@@ -16,7 +16,7 @@ final class ShelfStore {
     private(set) var thumbnails: [String: NSImage] = [:]
 
     /// Called after a newly captured screenshot lands on the shelf.
-    @ObservationIgnored var onNewScreenshot: (() -> Void)?
+    @ObservationIgnored var onNewScreenshot: ((ScreenshotRecord) -> Void)?
 
     @ObservationIgnored private var removedPaths: Set<String>
     @ObservationIgnored private var pendingPaths: Set<String> = []
@@ -97,7 +97,7 @@ final class ShelfStore {
         withAnimation(Motion.arrive) { items = Array(updated.prefix(Self.capacity)) }
         loadThumbnail(record)
         if items.contains(where: { $0.path == record.path }) {
-            onNewScreenshot?()
+            onNewScreenshot?(record)
         }
     }
 

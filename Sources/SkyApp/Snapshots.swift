@@ -44,6 +44,10 @@ public enum Snapshots {
 
         try await write("shelf-collapsed", size: shelfSize, backdrop(ShelfView(store: store, state: shelf, actions: actions)))
 
+        shelf.copiedPath = newest.path
+        try await write("shelf-copied", size: shelfSize, backdrop(ShelfView(store: store, state: shelf, actions: actions)))
+        shelf.copiedPath = nil
+
         shelf.isExpanded = true
         try await write("shelf-expanded", size: shelfSize, backdrop(ShelfView(store: store, state: shelf, actions: actions)))
 

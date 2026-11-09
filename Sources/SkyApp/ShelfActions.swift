@@ -18,14 +18,13 @@ struct ScreenshotOperations {
 
     /// Puts both the image and the file on the clipboard, so pasting works in
     /// apps that want pixels (chat, docs) and apps that want a file (Finder, mail).
-    func copy(_ record: ScreenshotRecord) {
+    func copy(_ record: ScreenshotRecord, to pasteboard: NSPasteboard = .general) {
         let item = NSPasteboardItem()
         if let png = Self.pngData(for: record.url) {
             item.setData(png, forType: .png)
         }
         item.setString(record.url.absoluteString, forType: .fileURL)
 
-        let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.writeObjects([item])
     }

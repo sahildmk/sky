@@ -74,6 +74,16 @@ struct ScreenshotCard: View {
                 .skyGlass(in: Capsule(), interactive: true)
                 .padding(.bottom, 7)
                 .transition(.opacity.combined(with: .offset(y: 6)))
+            } else if isCopied {
+                // Confirms a copy made without the controls showing: an
+                // automatic copy of a new screenshot, or C pressed over the card.
+                Label("Copied", systemImage: "checkmark")
+                    .font(.system(size: 10, weight: .semibold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .skyGlass(in: Capsule())
+                    .padding(.bottom, 7)
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
             }
         }
         // The shadow comes from a backing shape so the controls above don't cast one.

@@ -15,9 +15,13 @@ final class ShelfState {
 }
 
 /// A transparent strip across the top of the primary display that holds the
-/// shelf. It never takes focus, and lets clicks through everywhere except
-/// over the shelf itself.
+/// shelf. It lets clicks through everywhere except over the shelf itself, and
+/// takes keyboard focus only while the pointer is over the shelf, without
+/// bringing Sky to the front.
 final class ShelfPanel: NSPanel {
+    /// Called when C or ⌘C is pressed.
+    var onCopy: () -> Void = {}
+
     init() {
         super.init(
             contentRect: .zero,
@@ -37,8 +41,26 @@ final class ShelfPanel: NSPanel {
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
     }
 
-    override var canBecomeKey: Bool { false }
+    override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
+
+    override func keyDown(with event: NSEvent) {
+        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if event.charactersIgnoringModifiers?.lowercased() == "c", modifiers.subtracting(.capsLock).isEmpty {
+            onCopy()
+        } else {
+            super.keyDown(with: event)
+        }
+    }
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting(.capsLock)
+        if modifiers == .command, event.charactersIgnoringModifiers?.lowercased() == "c" {
+            onCopy()
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
+    }
 }
 
 /// Lets the first click on the shelf act immediately instead of only focusing it.
@@ -57,6 +79,7 @@ final class ShelfController {
 
     let state = ShelfState()
     private let store: ShelfStore
+    private let actions: ShelfActions
     private let panel = ShelfPanel()
     private var pointerTimer: Timer?
     private var hideDeadline: Date?
@@ -85,8 +108,11 @@ final class ShelfController {
 
     init(store: ShelfStore, preview: PreviewController) {
         self.store = store
-        let actions = ShelfActions(store: store, state: state, preview: preview)
+        actions = ShelfActions(store: store, state: state, preview: preview)
         panel.contentView = FirstClickHostingView(rootView: ShelfView(store: store, state: state, actions: actions))
+        panel.onCopy = { [weak self] in
+            MainActor.assumeIsolated { self?.copyHoveredScreenshot() }
+        }
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
         ) { [weak self] _ in
@@ -123,6 +149,39 @@ final class ShelfController {
 
     func toggle() {
         state.isPresented ? hide() : show()
+    }
+
+    /// Copies a screenshot and shows that it was copied.
+    func copy(_ record: ScreenshotRecord) {
+        actions.copy(record)
+    }
+
+    private func copyHoveredScreenshot() {
+        guard let path = state.hoveredPath, let record = store.items.first(where: { $0.path == path }) else {
+            NSSound.beep()
+            return
+        }
+        actions.copy(record)
+    }
+
+    // MARK: Keyboard focus
+
+    // The shelf takes keyboard focus while the pointer is over it, so C and
+    // ⌘C reach it, and gives it back as soon as the pointer leaves. The panel
+    // never activates Sky, so the app you were in stays frontmost throughout.
+
+    private func takeKeyboardFocus() {
+        // Leave focus alone while another Sky window, such as the preview, has it.
+        guard !panel.isKeyWindow, NSApp.keyWindow == nil else { return }
+        panel.makeKey()
+    }
+
+    private func returnKeyboardFocus() {
+        guard panel.isKeyWindow else { return }
+        // Taking the panel off screen hands focus back to the frontmost app's
+        // window; putting it straight back happens before the next frame is drawn.
+        panel.orderOut(nil)
+        panel.orderFrontRegardless()
     }
 
     private func placePanel() {
@@ -180,6 +239,7 @@ final class ShelfController {
         }
 
         if isOver {
+            takeKeyboardFocus()
             collapseDeadline = nil
             if !keepsVisible { hideDeadline = now + Self.lingerAfterHover }
             if !state.isExpanded, !store.items.isEmpty {
@@ -195,8 +255,10 @@ final class ShelfController {
         if state.hoveredPath != nil {
             withAnimation(Motion.hover) { state.hoveredPath = nil }
         }
-        // Holding the button means a drag may be under way; keep the shelf still.
+        // Holding the button means a drag may be under way; keep the shelf
+        // still, and keep it on screen so the drag isn't cancelled.
         guard !buttonHeld else { return }
+        returnKeyboardFocus()
 
         if state.isExpanded {
             if let deadline = collapseDeadline {

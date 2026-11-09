@@ -24,7 +24,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var locationCheck: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        store.onNewScreenshot = { [weak self] in self?.shelf.show() }
+        store.onNewScreenshot = { [weak self] record in
+            guard let self else { return }
+            // ⇧⌘3 saves one file per display; only the newest ends up on the clipboard.
+            if self.copiesNewScreenshots, self.store.items.first?.path == record.path {
+                self.shelf.copy(record)
+            }
+            self.shelf.show()
+        }
         watch(ScreenshotLocation.current())
         installStatusItem()
         shelf.startWatchingTopEdge()
@@ -75,6 +82,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(item("Open Screenshots Folder", action: #selector(openScreenshotsFolder), key: ""))
         menu.addItem(.separator())
 
+        let copyNew = item("Copy New Screenshots", action: #selector(toggleCopyNew), key: "")
+        copyNew.state = copiesNewScreenshots ? .on : .off
+        copyNew.toolTip = "Put each new screenshot on the clipboard as soon as it's saved."
+        menu.addItem(copyNew)
+
         let topEdge = item("Show Shelf at Top Edge", action: #selector(toggleTopEdge), key: "")
         topEdge.state = shelf.revealsAtTopEdge ? .on : .off
         topEdge.toolTip = "Rest the pointer against the middle of the top edge of your main display to bring the shelf down."
@@ -111,6 +123,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func openScreenshotsFolder() {
         NSWorkspace.shared.open(ScreenshotLocation.current())
+    }
+
+    /// Whether each new screenshot goes straight onto the clipboard.
+    private var copiesNewScreenshots: Bool {
+        get { !UserDefaults.standard.bool(forKey: "copyNewScreenshotsDisabled") }
+        set { UserDefaults.standard.set(!newValue, forKey: "copyNewScreenshotsDisabled") }
+    }
+
+    @objc private func toggleCopyNew() {
+        copiesNewScreenshots.toggle()
     }
 
     @objc private func toggleTopEdge() {

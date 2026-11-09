@@ -27,5 +27,10 @@ let package = Package(
             dependencies: ["SkyCore"],
             path: "Tests/SkyCoreTests"
         ),
+        .testTarget(
+            name: "SkyAppTests",
+            dependencies: ["SkyApp", "SkyCore"],
+            path: "Tests/SkyAppTests"
+        ),
     ]
 )

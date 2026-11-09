@@ -9,10 +9,10 @@ Sky is a native macOS app written in Swift, SwiftUI and AppKit, and uses Liquid 
 ## What it does
 
 **The shelf**
-- A new screenshot drops onto a stack at the top of your main display. The stack hides itself a few seconds later.
+- A new screenshot drops onto a stack at the top of your main display and goes straight onto the clipboard, ready to paste. The stack hides itself a few seconds later.
 - Bring the shelf back at any time the way you'd bring up an auto-hiding Dock: rest the pointer against the middle of the top edge of your main display for a moment. Passing through on the way to a menu, or dragging a window up there, doesn't count.
 - Point at the stack to fan it out into a row of your most recent screenshots.
-- Point at a screenshot to see how old it is and to copy it, show it in Finder, move it to the Trash or take it off the shelf.
+- Point at a screenshot to see how old it is and to copy it, show it in Finder, move it to the Trash or take it off the shelf. Press C or ⌘C to copy the screenshot under the pointer. While the pointer is over the shelf it has keyboard focus, without bringing Sky to the front; it hands focus back as soon as the pointer leaves.
 - Drag a screenshot from the shelf straight into Slack, Mail, Finder or anywhere else that accepts files.
 - Copying puts both the image and the file on the clipboard, so pasting works in chat apps and in Finder.
 - The shelf lets clicks through everywhere except over the screenshots themselves.
@@ -24,6 +24,7 @@ Sky is a native macOS app written in Swift, SwiftUI and AppKit, and uses Liquid 
 
 **The menu bar**
 - Show or hide the shelf, clear it, or open your screenshots folder.
+- *Copy New Screenshots* turns the automatic copy on or off.
 - *Show Shelf at Top Edge* turns the top-edge reveal on or off.
 - *Keep Shelf Visible* stops the shelf hiding itself.
 - *Skip macOS Floating Thumbnail* turns off the small preview macOS shows in the corner after a capture. macOS waits for that thumbnail to go away (about five seconds) before it saves the file, so turning it off puts screenshots on the shelf straight away. This changes the same setting as the Options menu in the Screenshot app.
