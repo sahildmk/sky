@@ -5,14 +5,17 @@ struct ScreenshotCard: View {
     let record: ScreenshotRecord
     let thumbnail: NSImage?
     let isExpanded: Bool
-    let isHovered: Bool
+    /// Under the pointer, or chosen with the arrow keys.
+    let isSelected: Bool
+    /// Marks the selection when the shelf is driven from the keyboard.
+    let showsFocusRing: Bool
     let isCopied: Bool
     /// Shown on the top card of the collapsed deck.
     let badgeCount: Int?
     let actions: ShelfActions
 
     private var cornerRadius: CGFloat { isExpanded ? 12 : 10 }
-    private var showsControls: Bool { isExpanded && isHovered }
+    private var showsControls: Bool { isExpanded && isSelected }
 
     var body: some View {
         GeometryReader { proxy in
@@ -22,7 +25,14 @@ struct ScreenshotCard: View {
         }
         .overlay {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .strokeBorder(.white.opacity(isHovered ? 0.35 : 0.18), lineWidth: 0.5)
+                .strokeBorder(.white.opacity(isSelected ? 0.35 : 0.18), lineWidth: 0.5)
+        }
+        .overlay {
+            if showsFocusRing {
+                RoundedRectangle(cornerRadius: cornerRadius + 3, style: .continuous)
+                    .strokeBorder(Color(nsColor: .keyboardFocusIndicatorColor), lineWidth: 3)
+                    .padding(-3)
+            }
         }
         // Remove sits top-left, where macOS puts the close button on notifications.
         .overlay(alignment: .topLeading) {
@@ -94,9 +104,9 @@ struct ScreenshotCard: View {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .fill(.black)
                 .shadow(
-                    color: .black.opacity(isHovered ? 0.38 : 0.26),
-                    radius: isHovered ? 16 : 8,
-                    y: isHovered ? 9 : 4
+                    color: .black.opacity(isSelected ? 0.38 : 0.26),
+                    radius: isSelected ? 16 : 8,
+                    y: isSelected ? 9 : 4
                 )
         }
         .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))

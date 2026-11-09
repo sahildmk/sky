@@ -51,8 +51,15 @@ public enum Snapshots {
         shelf.isExpanded = true
         try await write("shelf-expanded", size: shelfSize, backdrop(ShelfView(store: store, state: shelf, actions: actions)))
 
-        shelf.hoveredPath = newest.path
+        shelf.selectedPath = newest.path
         try await write("shelf-hovered", size: shelfSize, backdrop(ShelfView(store: store, state: shelf, actions: actions)))
+
+        shelf.isKeyboardDriven = true
+        if records.count > 1 { shelf.selectedPath = records[1].path }
+        try await write("shelf-keyboard", size: shelfSize, backdrop(ShelfView(store: store, state: shelf, actions: actions)))
+        shelf.isKeyboardDriven = false
+
+        try await write("settings", size: CGSize(width: 420, height: 470), SettingsView().background(Color(nsColor: .windowBackgroundColor)))
 
         // The preview, sized as it would be on a 1512 × 945 point display.
         let state = preview.state

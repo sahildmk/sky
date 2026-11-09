@@ -1,14 +1,18 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 import PackageDescription
 
 let package = Package(
     name: "Sky",
     platforms: [.macOS(.v14)],
+    dependencies: [
+        // Global shortcuts that need no special permission, and the control for recording them.
+        .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "3.1.0"),
+    ],
     targets: [
         .target(name: "SkyCore", path: "Sources/SkyCore"),
         .target(
             name: "SkyApp",
-            dependencies: ["SkyCore"],
+            dependencies: ["SkyCore", .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts")],
             path: "Sources/SkyApp"
         ),
         .executableTarget(

@@ -1,4 +1,5 @@
 import AppKit
+import KeyboardShortcuts
 import ServiceManagement
 import SkyCore
 
@@ -19,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let store = ShelfStore()
     private lazy var preview = PreviewController(store: store)
     private lazy var shelf = ShelfController(store: store, preview: preview)
+    private let settings = SettingsWindowController()
     private var watcher: DirectoryWatcher?
     private var statusItem: NSStatusItem?
     private var locationCheck: Timer?
@@ -36,6 +38,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         watch(ScreenshotLocation.current())
         installStatusItem()
         shelf.startWatchingTopEdge()
+        KeyboardShortcuts.onKeyDown(for: .toggleShelf) { [weak self] in
+            MainActor.assumeIsolated { self?.shelf.toggleFromKeyboard() }
+        }
 
         // The save location can be changed at any time from the Screenshot app's Options menu.
         let timer = Timer(timeInterval: 5, repeats: true) { [weak self] _ in
@@ -76,8 +81,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
-        menu.addItem(item(shelf.isPresented ? "Hide Recent Screenshots" : "Show Recent Screenshots",
-                          action: #selector(toggleShelf), key: ""))
+        let showShelf = item(shelf.isPresented ? "Hide Recent Screenshots" : "Show Recent Screenshots",
+                             action: #selector(toggleShelf), key: "")
+        showShelf.setShortcut(for: .toggleShelf)
+        menu.addItem(showShelf)
         menu.addItem(item("Clear Shelf", action: #selector(clearShelf), key: ""))
         menu.addItem(.separator())
         menu.addItem(item("Open Screenshots Folder", action: #selector(openScreenshotsFolder), key: ""))
@@ -107,6 +114,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(login)
 
         menu.addItem(.separator())
+        menu.addItem(item("Settings…", action: #selector(openSettings), key: ","))
         menu.addItem(item("Quit Sky", action: #selector(quit), key: "q"))
     }
 
@@ -163,6 +171,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             alert.runModal()
         }
     }
+
+    @objc private func openSettings() { settings.show() }
 
     @objc private func quit() { NSApp.terminate(nil) }
 }

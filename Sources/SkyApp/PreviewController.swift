@@ -24,6 +24,16 @@ enum PreviewCommand {
     case close, previous, next, copy, revealInFinder, openInDefaultApp, moveToTrash
 }
 
+/// How the preview was dismissed, which decides where keyboard focus goes next.
+enum PreviewDismissal {
+    /// Esc, Space, the close button, or the card clicked again: focus goes
+    /// back to the shelf the preview was opened from.
+    case backToShelf
+    /// A click in another app, or a command that opens one (Finder, the
+    /// default app): focus stays with that app.
+    case elsewhere
+}
+
 /// A borderless window that can take keyboard focus without activating Sky,
 /// so the app you were in stays frontmost while you look at a screenshot.
 final class PreviewPanel: NSPanel {
@@ -52,6 +62,9 @@ final class PreviewPanel: NSPanel {
     override var canBecomeMain: Bool { false }
 
     override func keyDown(with event: NSEvent) {
+        // A held key repeats only for stepping between screenshots. Repeating
+        // anything else would, for example, trash one screenshot after another.
+        if event.isARepeat, event.keyCode != 123, event.keyCode != 124 { return }
         let command = event.modifierFlags.contains(.command)
         switch event.keyCode {
         case 53, 49: perform(.close)            // Escape, Space
@@ -65,6 +78,7 @@ final class PreviewPanel: NSPanel {
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         guard event.modifierFlags.contains(.command) else { return super.performKeyEquivalent(with: event) }
+        if event.isARepeat { return true }
         switch event.charactersIgnoringModifiers?.lowercased() {
         case "c": perform(.copy)
         case "w": perform(.close)
@@ -96,6 +110,12 @@ final class PreviewController: NSObject, NSWindowDelegate {
     private var outsideClickMonitor: Any?
     private var hideTask: Task<Void, Never>?
 
+    /// Called as the preview closes, with the screenshot it was showing and
+    /// how it was dismissed.
+    var onClose: ((ScreenshotRecord?, PreviewDismissal) -> Void)?
+
+    var isOpen: Bool { state.isVisible }
+
     init(store: ShelfStore) {
         self.store = store
     }
@@ -103,7 +123,7 @@ final class PreviewController: NSObject, NSWindowDelegate {
     /// Opens `record`, or closes the preview if it is already showing it.
     func toggle(_ record: ScreenshotRecord) {
         if state.isVisible, state.record?.path == record.path {
-            close()
+            close(.backToShelf)
         } else {
             show(record)
         }
@@ -143,16 +163,19 @@ final class PreviewController: NSObject, NSWindowDelegate {
 
     /// Closes the preview. A close from the keyboard is instant: it happens
     /// often, and an animation would only make the key feel slow.
-    func close(animated: Bool = true) {
+    func close(_ dismissal: PreviewDismissal, animated: Bool = true) {
         guard state.isVisible else { return }
         stopWatchingForOutsideClicks()
         hideTask?.cancel()
+        let closing = state.record
         guard animated else {
             state.isVisible = false
             finishClosing()
+            onClose?(closing, dismissal)
             return
         }
         withAnimation(Motion.previewOut) { state.isVisible = false }
+        onClose?(closing, dismissal)
         hideTask = Task { @MainActor in
             try? await Task.sleep(for: .seconds(Motion.previewOutDuration + 0.03))
             guard !Task.isCancelled, !self.state.isVisible else { return }
@@ -170,7 +193,7 @@ final class PreviewController: NSObject, NSWindowDelegate {
     /// Keys pressed while the preview has focus.
     private func performFromKeyboard(_ command: PreviewCommand) {
         switch command {
-        case .close: close(animated: false)
+        case .close: close(.backToShelf, animated: false)
         case .copy: copyCurrent(animated: false)
         default: perform(command)
         }
@@ -192,7 +215,7 @@ final class PreviewController: NSObject, NSWindowDelegate {
         guard let record = state.record else { return }
         switch command {
         case .close:
-            close()
+            close(.backToShelf)
         case .previous:
             step(-1)
         case .next:
@@ -201,16 +224,16 @@ final class PreviewController: NSObject, NSWindowDelegate {
             copyCurrent(animated: true)
         case .revealInFinder:
             operations.revealInFinder(record)
-            close()
+            close(.elsewhere)
         case .openInDefaultApp:
             operations.openInDefaultApp(record)
-            close()
+            close(.elsewhere)
         case .moveToTrash:
             let index = store.items.firstIndex { $0.path == record.path } ?? 0
             operations.moveToTrash(record) { [weak self] trashed in
                 guard let self, trashed else { return }
                 if self.store.items.isEmpty {
-                    self.close()
+                    self.close(.backToShelf)
                 } else {
                     self.show(self.store.items[min(index, self.store.items.count - 1)])
                 }
@@ -272,7 +295,7 @@ final class PreviewController: NSObject, NSWindowDelegate {
     private func watchForOutsideClicks() {
         guard outsideClickMonitor == nil else { return }
         outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            MainActor.assumeIsolated { self?.close() }
+            MainActor.assumeIsolated { self?.close(.elsewhere) }
         }
     }
 
@@ -284,6 +307,8 @@ final class PreviewController: NSObject, NSWindowDelegate {
     }
 
     func windowDidResignKey(_ notification: Notification) {
-        close()
+        // When the preview hands focus back to the shelf, it has already
+        // closed, so this only acts on focus moving to another app.
+        close(.elsewhere)
     }
 }

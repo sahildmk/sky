@@ -17,6 +17,11 @@ Sky is a native macOS app written in Swift, SwiftUI and AppKit, and uses Liquid 
 - Copying puts both the image and the file on the clipboard, so pasting works in chat apps and in Finder.
 - The shelf lets clicks through everywhere except over the screenshots themselves.
 
+**The keyboard**
+- Press ⇧⌘6 from any app to bring the shelf down with your newest screenshot selected. Change the shortcut in Settings (⌘, from the menu bar icon). On a Mac with a Touch Bar, ⇧⌘6 is also macOS's shortcut for a picture of the Touch Bar, and Sky's takes its place until you choose another.
+- ← and → select a screenshot, Space previews it, Return copies it and closes the shelf so you can paste straight away, C or ⌘C copies it, ⌘⌫ moves it to the Trash, and Esc or the shortcut again closes the shelf. The keys are shown along the bottom of the shelf while you use it.
+- Opened this way, the shelf keeps keyboard focus without bringing Sky to the front, and closes if you click into another app. Pointing at a card selects it too, so you can mix the two. When the shelf is up because you're pointing at it, only C and ⌘C reach it, so typing meant for another app can't trash or close anything.
+
 **The preview**
 - Click a screenshot to open it in a minimal preview window: a fixed 16:9 pane in the middle of the screen that every screenshot fits inside, so stepping between screenshots never resizes it. Small screenshots are shown at their real size rather than enlarged.
 - ← and → step through your recent screenshots. ⌘C copies, ⌘⌫ moves to the Trash, ⌘O or a double-click opens the file in its usual app, and Esc or Space closes the preview.
@@ -41,7 +46,7 @@ Sky reads your screenshots and never uploads them anywhere.
 ## Requirements
 
 - macOS 14 Sonoma or later
-- Xcode 16 or later (Swift 6 toolchain) to build
+- Xcode 26 or later (Swift 6.2 or later) to build
 
 ## Build and run
 
@@ -79,7 +84,7 @@ Liquid Glass only draws in a live window, so each view is shown in a window plac
 | Target | What it holds |
 | --- | --- |
 | `SkyCore` | Logic with no UI: recognising screenshot files, resolving the screenshots folder, and the geometry of the shelf and the preview. Covered by `Tests/SkyCoreTests`. |
-| `SkyApp` | The menu bar item, the folder watcher, the shelf and preview windows and their SwiftUI views. |
+| `SkyApp` | The menu bar item, the folder watcher, the shelf, preview and settings windows and their SwiftUI views. Global shortcuts come from [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts). |
 | `Sky` | The app's entry point. |
 | `SkySnapshots` | The off-screen renderer described above. |
 

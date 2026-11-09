@@ -157,6 +157,11 @@ public struct ShelfLayout: Equatable, Sendable {
         return CGRect(x: activeRect.minX, y: top, width: activeRect.width, height: activeRect.maxY - top)
     }
 
+    /// How many cards are drawn, counting from the newest.
+    public var visibleCount: Int {
+        cards.prefix { $0.isVisible }.count
+    }
+
     /// Index of the visible card under `point`, preferring the one drawn on top.
     public func cardIndex(at point: CGPoint) -> Int? {
         cards.indices

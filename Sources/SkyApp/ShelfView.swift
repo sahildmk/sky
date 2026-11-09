@@ -23,22 +23,23 @@ struct ShelfView: View {
 
             ForEach(Array(store.items.enumerated()), id: \.element.path) { index, record in
                 let card = layout.cards[index]
-                let isHovered = state.hoveredPath == record.path
+                let isSelected = state.selectedPath == record.path
                 ScreenshotCard(
                     record: record,
                     thumbnail: store.thumbnails[record.path],
                     isExpanded: state.isExpanded,
-                    isHovered: isHovered,
+                    isSelected: isSelected,
+                    showsFocusRing: state.isKeyboardDriven && isSelected,
                     isCopied: state.copiedPath == record.path,
                     badgeCount: index == 0 && !state.isExpanded && store.items.count > 1 ? store.items.count : nil,
                     actions: actions
                 )
                 .frame(width: card.frame.width, height: card.frame.height)
-                .scaleEffect(card.scale * (isHovered ? 1.035 : 1))
+                .scaleEffect(card.scale * (isSelected ? 1.035 : 1))
                 .rotationEffect(.degrees(card.rotation))
                 .opacity(card.isVisible ? 1 : 0)
                 .position(x: card.frame.midX, y: card.frame.midY)
-                .zIndex(isHovered ? 1 : card.zIndex)
+                .zIndex(isSelected ? 1 : card.zIndex)
                 // Cards fan out one after another, newest first, and gather back together at once.
                 .animation(
                     state.isExpanded
@@ -53,10 +54,50 @@ struct ShelfView: View {
                 ))
             }
         }
+        .overlay(alignment: .topLeading) {
+            if state.isKeyboardDriven, !store.items.isEmpty {
+                KeyHints()
+                    .fixedSize()
+                    .position(x: state.containerWidth / 2, y: layout.contentBottom + 28)
+            }
+        }
         .frame(width: state.containerWidth, height: ShelfController.panelHeight, alignment: .topLeading)
         // Slides down from the menu bar and back up into it. With Reduce Motion it only fades.
         .offset(y: state.isPresented || Motion.reduceMotion ? 0 : -(layout.contentBottom + 40))
         .opacity(state.isPresented ? 1 : 0)
+    }
+}
+
+/// The keys the shelf answers to, shown while it is driven from the keyboard.
+private struct KeyHints: View {
+    private let hints: [(key: String, action: String)] = [
+        ("← →", "Select"),
+        ("Space", "Preview"),
+        ("↩", "Copy and close"),
+        ("C", "Copy"),
+        ("⌘⌫", "Trash"),
+        ("esc", "Close"),
+    ]
+
+    var body: some View {
+        HStack(spacing: 14) {
+            ForEach(hints, id: \.key) { hint in
+                HStack(spacing: 5) {
+                    Text(hint.key)
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .padding(.horizontal, 5)
+                        .frame(minWidth: 18, minHeight: 16)
+                        .background(.primary.opacity(0.1), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+                    Text(hint.action)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .skyGlass(in: Capsule())
+        .accessibilityElement(children: .combine)
     }
 }
 
