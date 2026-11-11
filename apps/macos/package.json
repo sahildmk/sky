@@ -1,0 +1,10 @@
+{
+  "name": "@sky/macos",
+  "private": true,
+  "scripts": {
+    "dev": "swift run Sky",
+    "build": "bash scripts/build-app.sh",
+    "test": "swift test",
+    "snapshots": "swift run SkySnapshots"
+  }
+}

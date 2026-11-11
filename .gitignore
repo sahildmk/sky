@@ -12,3 +12,14 @@ DerivedData/
 
 # macOS
 .DS_Store
+
+# Web workspace
+node_modules/
+dist/
+.output/
+.tanstack/
+.turbo/
+.env
+.env.*
+!.env.example
+*.tsbuildinfo

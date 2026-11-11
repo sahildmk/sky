@@ -1,0 +1,9 @@
+node_modules
+.build
+build
+dist
+.output
+.tanstack
+.turbo
+bun.lock
+apps/web/src/routeTree.gen.ts

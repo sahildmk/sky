@@ -1,0 +1,34 @@
+{
+  "name": "sky",
+  "private": true,
+  "packageManager": "bun@1.4.4",
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22.12.0",
+    "bun": ">=1.4.4"
+  },
+  "scripts": {
+    "dev": "turbo run dev --filter=@sky/web",
+    "build": "turbo run build",
+    "build:web": "turbo run build --filter=@sky/web",
+    "start": "turbo run start --filter=@sky/web",
+    "typecheck": "turbo run typecheck",
+    "build:macos": "turbo run build --filter=@sky/macos",
+    "dev:macos": "turbo run dev --filter=@sky/macos",
+    "test:macos": "turbo run test --filter=@sky/macos",
+    "test": "turbo run test",
+    "check": "turbo run typecheck build test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.9.10",
+    "turbo": "^2.11.10"
+  },
+  "trustedDependencies": [
+    "esbuild",
+    "@parcel/watcher"
+  ]
+}
