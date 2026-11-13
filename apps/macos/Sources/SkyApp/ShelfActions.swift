@@ -61,11 +61,36 @@ struct ShelfActions {
     let store: ShelfStore
     let state: ShelfState
     let preview: PreviewController
+    let threads: ThreadsStore
+    let threadPanel: ThreadPanelController
+    /// The shelf's window, for finding where a card is on screen.
+    let shelfPanel: NSWindow
 
     private var operations: ScreenshotOperations { ScreenshotOperations(store: store) }
 
     func open(_ record: ScreenshotRecord) {
+        threadPanel.close(.backToShelf, animated: false)
         preview.toggle(record)
+    }
+
+    func open(_ thread: SkyThread) {
+        let contents = ShelfContents(store: store, threads: threads)
+        guard let frame = ShelfController.screenFrame(
+            of: .thread(id: thread.id), in: contents, containerWidth: state.containerWidth, panelFrame: shelfPanel.frame
+        ) else { return }
+        preview.close(.backToShelf, animated: false)
+        threadPanel.toggle(thread, below: frame)
+    }
+
+    /// Resolves a thread, which takes it off the shelf.
+    func resolve(_ thread: SkyThread) {
+        Task { @MainActor in
+            do {
+                _ = try await threads.setResolved(true, threadID: thread.id)
+            } catch {
+                NSSound.beep()
+            }
+        }
     }
 
     func revealInFinder(_ record: ScreenshotRecord) {

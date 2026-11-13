@@ -13,7 +13,9 @@ import UniformTypeIdentifiers
 /// ScreenCaptureKit. That needs the Screen Recording permission.
 public enum Snapshots {
     /// Renders the shelf in each state and the preview of the newest
-    /// screenshot in `directory`, writing PNGs into `output`.
+    /// screenshot in `directory`, writing PNGs into `output`. Open threads
+    /// come from the Sky service if it is running; without it, the shelf
+    /// shows screenshots only and the thread panel is skipped.
     @MainActor
     public static func render(screenshotsIn directory: URL, to output: URL) async throws -> [URL] {
         let records = ScreenshotFiles.recent(in: directory, limit: ShelfStore.capacity)
@@ -26,11 +28,18 @@ public enum Snapshots {
         })
 
         let store = ShelfStore(items: records, thumbnails: thumbnails)
+        let client = SkyServiceClient.fromEnvironment()
+        let openThreads = (try? await client.openThreads()) ?? []
+        let threads = ThreadsStore(threads: openThreads)
         let preview = PreviewController(store: store)
+        let threadPanel = ThreadPanelController(threads: threads)
         let shelf = ShelfState()
         shelf.isPresented = true
         shelf.containerWidth = 1512
-        let actions = ShelfActions(store: store, state: shelf, preview: preview)
+        let actions = ShelfActions(
+            store: store, state: shelf, preview: preview,
+            threads: threads, threadPanel: threadPanel, shelfPanel: NSPanel()
+        )
         let shelfSize = CGSize(width: shelf.containerWidth, height: ShelfController.panelHeight)
         try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
 
@@ -42,22 +51,41 @@ public enum Snapshots {
             written.append(url)
         }
 
-        try await write("shelf-collapsed", size: shelfSize, backdrop(ShelfView(store: store, state: shelf, actions: actions)))
+        try await write("shelf-collapsed", size: shelfSize, backdrop(ShelfView(store: store, threads: threads, state: shelf, actions: actions)))
 
         shelf.copiedPath = newest.path
-        try await write("shelf-copied", size: shelfSize, backdrop(ShelfView(store: store, state: shelf, actions: actions)))
+        try await write("shelf-copied", size: shelfSize, backdrop(ShelfView(store: store, threads: threads, state: shelf, actions: actions)))
         shelf.copiedPath = nil
 
         shelf.isExpanded = true
-        try await write("shelf-expanded", size: shelfSize, backdrop(ShelfView(store: store, state: shelf, actions: actions)))
+        try await write("shelf-expanded", size: shelfSize, backdrop(ShelfView(store: store, threads: threads, state: shelf, actions: actions)))
 
-        shelf.selectedPath = newest.path
-        try await write("shelf-hovered", size: shelfSize, backdrop(ShelfView(store: store, state: shelf, actions: actions)))
+        shelf.selected = .screenshot(path: newest.path)
+        try await write("shelf-hovered", size: shelfSize, backdrop(ShelfView(store: store, threads: threads, state: shelf, actions: actions)))
 
         shelf.isKeyboardDriven = true
-        if records.count > 1 { shelf.selectedPath = records[1].path }
-        try await write("shelf-keyboard", size: shelfSize, backdrop(ShelfView(store: store, state: shelf, actions: actions)))
+        if records.count > 1 { shelf.selected = .screenshot(path: records[1].path) }
+        try await write("shelf-keyboard", size: shelfSize, backdrop(ShelfView(store: store, threads: threads, state: shelf, actions: actions)))
+        if let thread = openThreads.first {
+            shelf.selected = .thread(id: thread.id)
+            try await write("shelf-keyboard-thread", size: shelfSize, backdrop(ShelfView(store: store, threads: threads, state: shelf, actions: actions)))
+        }
         shelf.isKeyboardDriven = false
+
+        // Each open thread in its panel, as tall as a 945 point display allows below the shelf.
+        for (index, thread) in openThreads.enumerated() {
+            guard let detail = try? await client.thread(id: thread.id) else { continue }
+            let panelState = threadPanel.state
+            panelState.thread = detail.thread
+            panelState.messages = detail.messages
+            panelState.isVisible = true
+            panelState.maxHeight = 700
+            let size = CGSize(
+                width: ThreadPanelController.width + 2 * ThreadPanelController.shadowInset,
+                height: panelState.maxHeight + 2 * ThreadPanelController.shadowInset
+            )
+            try await write("thread-\(index + 1)", size: size, backdrop(ThreadView(state: panelState, perform: { _ in }, onHeightChange: { _ in })))
+        }
 
         try await write("settings", size: CGSize(width: 420, height: 470), SettingsView().background(Color(nsColor: .windowBackgroundColor)))
 
@@ -120,19 +148,31 @@ public enum Snapshots {
         // Give SwiftUI and the window server time to draw the glass.
         try await Task.sleep(for: .milliseconds(600))
 
-        let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
-        guard let captured = content.windows.first(where: { $0.windowID == CGWindowID(window.windowNumber) }) else {
-            throw SnapshotError.renderFailed("window \(window.windowNumber)")
+        do {
+            let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
+            guard let captured = content.windows.first(where: { $0.windowID == CGWindowID(window.windowNumber) }) else {
+                throw SnapshotError.renderFailed("window \(window.windowNumber)")
+            }
+            let configuration = SCStreamConfiguration()
+            configuration.width = Int(size.width * 2)
+            configuration.height = Int(size.height * 2)
+            configuration.showsCursor = false
+            configuration.ignoreShadowsSingleWindow = true
+            return try await SCScreenshotManager.captureImage(
+                contentFilter: SCContentFilter(desktopIndependentWindow: captured),
+                configuration: configuration
+            )
+        } catch {
+            // Without the Screen Recording permission, draw the window's views
+            // directly instead. Layout and text come out right; glass does not.
+            FileHandle.standardError.write(Data("Screen capture failed (\(error.localizedDescription)); drawing without Liquid Glass.\n".utf8))
+            guard let view = window.contentView, let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else {
+                throw SnapshotError.renderFailed("window \(window.windowNumber)")
+            }
+            view.cacheDisplay(in: view.bounds, to: bitmap)
+            guard let image = bitmap.cgImage else { throw SnapshotError.renderFailed("window \(window.windowNumber)") }
+            return image
         }
-        let configuration = SCStreamConfiguration()
-        configuration.width = Int(size.width * 2)
-        configuration.height = Int(size.height * 2)
-        configuration.showsCursor = false
-        configuration.ignoreShadowsSingleWindow = true
-        return try await SCScreenshotManager.captureImage(
-            contentFilter: SCContentFilter(desktopIndependentWindow: captured),
-            configuration: configuration
-        )
     }
 
     private static func writePNG(_ image: CGImage, to url: URL) throws {

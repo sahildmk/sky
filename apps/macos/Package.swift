@@ -3,16 +3,22 @@ import PackageDescription
 
 let package = Package(
     name: "Sky",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS(.v26)],
     dependencies: [
         // Global shortcuts that need no special permission, and the control for recording them.
         .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "3.1.0"),
+        // Renders thread messages as markdown. Pinned exactly: it is before 1.0.
+        .package(url: "https://github.com/gonzalezreal/textual", exact: "0.5.0"),
     ],
     targets: [
         .target(name: "SkyCore", path: "Sources/SkyCore"),
         .target(
             name: "SkyApp",
-            dependencies: ["SkyCore", .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts")],
+            dependencies: [
+                "SkyCore",
+                .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
+                .product(name: "Textual", package: "textual"),
+            ],
             path: "Sources/SkyApp"
         ),
         .executableTarget(

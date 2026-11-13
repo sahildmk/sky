@@ -10,7 +10,7 @@ final class ShelfState {
     var isPresented = false
     var isExpanded = false
     /// The card the pointer is on, or the one chosen with the arrow keys.
-    var selectedPath: String?
+    var selected: ShelfItem?
     var copiedPath: String?
     /// Opened with the keyboard shortcut: the shelf keeps keyboard focus,
     /// shows its keys, and stays open until dismissed.
@@ -37,7 +37,9 @@ final class ShelfController: NSObject, NSWindowDelegate {
 
     let state = ShelfState()
     private let store: ShelfStore
+    private let threads: ThreadsStore
     private let preview: PreviewController
+    private let threadPanel: ThreadPanelController
     private let actions: ShelfActions
     private let panel = ShelfPanel()
     private var pointerTimer: Timer?
@@ -80,13 +82,18 @@ final class ShelfController: NSObject, NSWindowDelegate {
 
     var isPresented: Bool { state.isPresented }
 
-    init(store: ShelfStore, preview: PreviewController) {
+    init(store: ShelfStore, threads: ThreadsStore, preview: PreviewController, threadPanel: ThreadPanelController) {
         self.store = store
+        self.threads = threads
         self.preview = preview
-        actions = ShelfActions(store: store, state: state, preview: preview)
+        self.threadPanel = threadPanel
+        actions = ShelfActions(
+            store: store, state: state, preview: preview,
+            threads: threads, threadPanel: threadPanel, shelfPanel: panel
+        )
         super.init()
         panel.delegate = self
-        panel.contentView = FirstClickHostingView(rootView: ShelfView(store: store, state: state, actions: actions))
+        panel.contentView = FirstClickHostingView(rootView: ShelfView(store: store, threads: threads, state: state, actions: actions))
         panel.perform = { [weak self] command in
             MainActor.assumeIsolated { self?.perform(command) }
         }
@@ -94,7 +101,10 @@ final class ShelfController: NSObject, NSWindowDelegate {
             MainActor.assumeIsolated { self?.state.isKeyboardDriven == true || command == .copy }
         }
         preview.onClose = { [weak self] record, dismissal in
-            MainActor.assumeIsolated { self?.previewClosed(showing: record, dismissal) }
+            MainActor.assumeIsolated { self?.panelClosed(showing: record.map { .screenshot(path: $0.path) }, dismissal) }
+        }
+        threadPanel.onClose = { [weak self] id, dismissal in
+            MainActor.assumeIsolated { self?.panelClosed(showing: id.map { .thread(id: $0) }, dismissal) }
         }
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
@@ -109,12 +119,13 @@ final class ShelfController: NSObject, NSWindowDelegate {
     func show(lingering linger: TimeInterval = ShelfController.lingerAfterCapture) {
         placePanel()
         panel.orderFrontRegardless()
+        threads.startPolling()
         if state.isKeyboardDriven {
             // A capture while the keyboard drives the shelf: stay expanded,
             // and keep the selection on a card that is still shown.
             withoutAnimation {
-                state.isExpanded = !store.items.isEmpty
-                if !isVisible(state.selectedPath) { state.selectedPath = store.items.first?.path }
+                state.isExpanded = !contents.isEmpty
+                if !isVisible(state.selected) { state.selected = visibleItems.first }
             }
         } else {
             hideDeadline = keepsVisible ? nil : Date() + linger
@@ -148,12 +159,13 @@ final class ShelfController: NSObject, NSWindowDelegate {
         withoutAnimation {
             state.isKeyboardDriven = true
             state.isPresented = true
-            state.isExpanded = !store.items.isEmpty
-            if !isVisible(state.selectedPath) {
-                state.selectedPath = store.items.first?.path
+            state.isExpanded = !contents.isEmpty
+            if !isVisible(state.selected) {
+                state.selected = visibleItems.first
             }
         }
         panel.orderFrontRegardless()
+        threads.startPolling()
         panel.makeKey()
         startTrackingPointer()
     }
@@ -163,6 +175,7 @@ final class ShelfController: NSObject, NSWindowDelegate {
         collapseDeadline = nil
         panel.ignoresMouseEvents = true
         hideGeneration += 1
+        threads.stopPolling()
         guard animated else {
             withoutAnimation { resetToHidden() }
             panel.orderOut(nil)
@@ -193,7 +206,7 @@ final class ShelfController: NSObject, NSWindowDelegate {
     private func resetToHidden() {
         state.isPresented = false
         state.isExpanded = false
-        state.selectedPath = nil
+        state.selected = nil
         state.isKeyboardDriven = false
     }
 
@@ -220,71 +233,98 @@ final class ShelfController: NSObject, NSWindowDelegate {
 
     // MARK: Keyboard
 
+    private var contents: ShelfContents { ShelfContents(store: store, threads: threads) }
+
     private var layout: ShelfLayout {
-        ShelfLayout.make(
-            aspectRatios: store.items.map(\.aspectRatio),
-            containerWidth: state.containerWidth,
-            expanded: state.isExpanded
-        )
+        contents.layout(containerWidth: state.containerWidth, expanded: state.isExpanded)
     }
 
-    /// The cards shown on the shelf, newest first. Cards that don't fit in the
+    /// The cards shown on the shelf, in order. Cards that don't fit in the
     /// row can't be selected.
-    private var visibleItems: ArraySlice<ScreenshotRecord> {
-        store.items.prefix(layout.visibleCount)
+    private var visibleItems: [ShelfItem] {
+        let items = contents.items
+        return layout.visibleIndices.map { items[$0] }
     }
 
-    private func isVisible(_ path: String?) -> Bool {
-        visibleItems.contains { $0.path == path }
+    private func isVisible(_ item: ShelfItem?) -> Bool {
+        guard let item else { return false }
+        return visibleItems.contains(item)
+    }
+
+    /// Where `item`'s card sits on screen once the shelf is expanded, in screen coordinates.
+    static func screenFrame(of item: ShelfItem, in contents: ShelfContents, containerWidth: CGFloat, panelFrame: CGRect) -> CGRect? {
+        guard let index = contents.items.firstIndex(of: item) else { return nil }
+        let card = contents.layout(containerWidth: containerWidth, expanded: true).cards[index].frame
+        // The layout's y axis points down from the top of the panel; the screen's points up.
+        return CGRect(x: panelFrame.minX + card.minX, y: panelFrame.maxY - card.maxY, width: card.width, height: card.height)
     }
 
     private func perform(_ command: ShelfCommand) {
-        let visible = Array(visibleItems)
-        let index = visible.firstIndex { $0.path == state.selectedPath }
-        let selected = index.map { visible[$0] }
+        let visible = visibleItems
+        let index = visible.firstIndex { $0 == state.selected }
 
-        switch command {
-        case .previous, .next:
+        if command == .previous || command == .next {
             guard let next = ShelfSelection.moved(from: index, by: command == .next ? 1 : -1, visibleCount: visible.count) else {
                 NSSound.beep()
                 return
             }
-            withoutAnimation { state.selectedPath = visible[next].path }
-        case .preview:
-            guard let selected else { return NSSound.beep() }
-            preview.show(selected)
-        case .copy:
-            guard let selected else { return NSSound.beep() }
-            actions.copy(selected, animated: false)
-        case .copyAndClose:
-            guard let selected else { return NSSound.beep() }
-            ScreenshotOperations(store: store).copy(selected)
+            withoutAnimation { state.selected = visible[next] }
+            return
+        }
+        if command == .close {
             endKeyboardMode(animated: false)
-        case .moveToTrash:
-            guard let selected, let index else { return NSSound.beep() }
-            ScreenshotOperations(store: store).moveToTrash(selected) { [weak self] trashed in
-                // Ignore the result if the shelf closed or the selection moved on meanwhile.
-                guard let self, trashed, self.state.isPresented, self.state.selectedPath == selected.path else { return }
-                // Select the card that took its place, or the new last one.
-                let remaining = Array(self.visibleItems)
-                self.state.selectedPath = remaining.isEmpty ? nil : remaining[min(index, remaining.count - 1)].path
+            return
+        }
+
+        switch state.selected {
+        case .screenshot(let path)?:
+            guard let record = contents.screenshot(path), let index else { return NSSound.beep() }
+            perform(command, on: record, at: index)
+        case .thread(let id)?:
+            // Space and Return open a thread; the screenshot commands don't apply.
+            guard let thread = contents.thread(id), command == .preview || command == .copyAndClose else {
+                return NSSound.beep()
             }
-        case .close:
-            endKeyboardMode(animated: false)
+            actions.open(thread)
+        case nil:
+            NSSound.beep()
         }
     }
 
-    /// The preview closed. If the keyboard drives the shelf and the preview
-    /// was dismissed back to it, focus returns to the shelf with the
-    /// screenshot the preview ended on selected. If it was dismissed to
-    /// another app, the shelf leaves keyboard mode too, as it would for a
+    private func perform(_ command: ShelfCommand, on selected: ScreenshotRecord, at index: Int) {
+        switch command {
+        case .preview:
+            threadPanel.close(.backToShelf, animated: false)
+            preview.show(selected)
+        case .copy:
+            actions.copy(selected, animated: false)
+        case .copyAndClose:
+            ScreenshotOperations(store: store).copy(selected)
+            endKeyboardMode(animated: false)
+        case .moveToTrash:
+            ScreenshotOperations(store: store).moveToTrash(selected) { [weak self] trashed in
+                // Ignore the result if the shelf closed or the selection moved on meanwhile.
+                guard let self, trashed, self.state.isPresented, self.state.selected == .screenshot(path: selected.path) else { return }
+                // Select the card that took its place, or the new last one.
+                let remaining = self.visibleItems
+                self.state.selected = remaining.isEmpty ? nil : remaining[min(index, remaining.count - 1)]
+            }
+        case .previous, .next, .close:
+            break
+        }
+    }
+
+    /// The preview or a thread panel closed. If the keyboard drives the
+    /// shelf and the panel was dismissed back to it, focus returns to the
+    /// shelf with the card the panel ended on selected. If it was dismissed
+    /// to another app, the shelf leaves keyboard mode too, as it would for a
     /// click in that app.
-    private func previewClosed(showing record: ScreenshotRecord?, _ dismissal: PreviewDismissal) {
+    private func panelClosed(showing item: ShelfItem?, _ dismissal: PanelDismissal) {
         guard state.isPresented, state.isKeyboardDriven else { return }
         switch dismissal {
         case .backToShelf:
-            if let record, isVisible(record.path) {
-                state.selectedPath = record.path
+            if let item, isVisible(item) {
+                state.selected = item
             }
             panel.makeKey()
         case .elsewhere:
@@ -297,7 +337,7 @@ final class ShelfController: NSObject, NSWindowDelegate {
         // Focus moves to the preview when it opens, and comes back when it closes.
         // Anywhere else means another app was clicked, which dismisses the shelf.
         Task { @MainActor in
-            guard self.state.isKeyboardDriven, !self.panel.isKeyWindow, !self.preview.isOpen else { return }
+            guard self.state.isKeyboardDriven, !self.panel.isKeyWindow, !self.preview.isOpen, !self.threadPanel.isOpen else { return }
             self.endKeyboardMode(animated: true)
         }
     }
@@ -352,14 +392,26 @@ final class ShelfController: NSObject, NSWindowDelegate {
         let point = CGPoint(x: mouse.x - frame.minX, y: frame.maxY - mouse.y)
         let buttonHeld = NSEvent.pressedMouseButtons != 0
         let layout = self.layout
+        let items = contents.items
         panel.ignoresMouseEvents = !layout.activeRect.contains(point)
 
         if state.isKeyboardDriven {
             // The pointer only takes the selection when it moves onto a card.
-            if mouse != lastPointer, let index = layout.cardIndex(at: point), store.items[index].path != state.selectedPath {
-                withAnimation(Motion.hover) { state.selectedPath = store.items[index].path }
+            if mouse != lastPointer, let index = layout.cardIndex(at: point), items[index] != state.selected {
+                withAnimation(Motion.hover) { state.selected = items[index] }
             }
             lastPointer = mouse
+            return
+        }
+
+        // A thread hangs below its card, so the shelf stays open and expanded
+        // while it does, with that thread's card selected.
+        if threadPanel.isOpen {
+            hideDeadline = keepsVisible ? nil : now + Self.lingerAfterHover
+            collapseDeadline = nil
+            if let id = threadPanel.state.thread?.id, isVisible(.thread(id: id)), state.selected != .thread(id: id) {
+                withAnimation(Motion.hover) { state.selected = .thread(id: id) }
+            }
             return
         }
 
@@ -381,22 +433,22 @@ final class ShelfController: NSObject, NSWindowDelegate {
             }
             collapseDeadline = nil
             if !keepsVisible { hideDeadline = now + Self.lingerAfterHover }
-            if !state.isExpanded, !store.items.isEmpty {
+            if !state.isExpanded, !contents.isEmpty {
                 withAnimation(Motion.expand) { state.isExpanded = true }
                 expandedAt = now
             }
             // A card only counts as hovered once the fan-out has settled, so its
             // controls never fade in while the cards are still moving.
             let settled = expandedAt.map { now.timeIntervalSince($0) >= Motion.fanOutSettleTime } ?? true
-            let hovered = settled ? layout.cardIndex(at: point).map { store.items[$0].path } : nil
-            if hovered != state.selectedPath {
-                withAnimation(Motion.hover) { state.selectedPath = hovered }
+            let hovered = settled ? layout.cardIndex(at: point).map { items[$0] } : nil
+            if hovered != state.selected {
+                withAnimation(Motion.hover) { state.selected = hovered }
             }
             return
         }
 
-        if state.selectedPath != nil {
-            withAnimation(Motion.hover) { state.selectedPath = nil }
+        if state.selected != nil {
+            withAnimation(Motion.hover) { state.selected = nil }
         }
         // Holding the button means a drag may be under way; keep the shelf
         // still, and keep it on screen so the drag isn't cancelled.

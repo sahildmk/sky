@@ -18,8 +18,10 @@ public enum SkyApplication {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let store = ShelfStore()
+    private let threads = ThreadsStore(client: .fromEnvironment())
     private lazy var preview = PreviewController(store: store)
-    private lazy var shelf = ShelfController(store: store, preview: preview)
+    private lazy var threadPanel = ThreadPanelController(threads: threads)
+    private lazy var shelf = ShelfController(store: store, threads: threads, preview: preview, threadPanel: threadPanel)
     private let settings = SettingsWindowController()
     private var watcher: DirectoryWatcher?
     private var statusItem: NSStatusItem?

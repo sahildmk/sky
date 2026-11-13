@@ -14,6 +14,10 @@ apps/
   web/          TanStack Start + React + TypeScript + Vite
     src/        Routes, components, and styles
     public/     Static assets
+  service/      Local HTTP service that owns threads and their messages
+  mcp/          MCP server that lets an agent create and update threads
+packages/
+  api/          Request and response schemas, and a typed client for the service
 scripts/        Compatibility entry points
 ```
 
@@ -37,7 +41,7 @@ The landing page includes a responsive product demo, screenshot previews, keyboa
 
 ## macOS app
 
-Requires macOS 14+ and Xcode 26+ (Swift 6.2+). Node and Bun are optional for native-only development.
+Requires macOS 26+ and Xcode 26+ (Swift 6.2+). Node and Bun are optional for native-only development.
 
 ```sh
 ./scripts/build-app.sh                  # universal, signed ad hoc
@@ -65,6 +69,12 @@ swift run SkySnapshots out
 ```
 
 Signing options, app behavior, permissions, and snapshot rendering are documented in the [native app README](apps/macos/README.md). Sky reads your screenshots locally and never uploads them anywhere.
+
+## Threads
+
+Sky can also show threads: topics an agent keeps a record of, each with a title, a markdown summary and markdown messages. Open threads appear as cards beside the screenshots on the shelf; clicking one, or selecting it and pressing Space, opens it below its card.
+
+Threads are stored by a local service (`apps/service`), which an agent writes to through an MCP server (`apps/mcp`) and the Mac app reads from over HTTP. Without the service, the shelf shows screenshots only. Setup is in the [service README](apps/service/README.md) and the [MCP server README](apps/mcp/README.md).
 
 ## Task caching
 

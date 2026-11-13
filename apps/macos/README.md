@@ -49,7 +49,7 @@ Sky reads your screenshots and never uploads them anywhere.
 
 ## Requirements
 
-- macOS 14 Sonoma or later
+- macOS 26 Tahoe or later
 - Xcode 26 or later (Swift 6.2 or later) to build
 
 ## Build and run
