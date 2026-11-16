@@ -4,13 +4,14 @@ A better home for your screenshots on macOS.
 
 Keep taking screenshots the way you already do, with ⇧⌘3, ⇧⌘4 or ⇧⌘5. Sky notices each one as soon as macOS saves it and shows your recent screenshots in a small stack at the top of your main display. Point at the stack and it fans out so you can grab, copy, preview or bin any of them.
 
-Sky is a native macOS app written in Swift, SwiftUI and AppKit, and uses Liquid Glass on macOS 26 and later. It lives in the menu bar, has no Dock icon and never takes focus away from the app you're working in.
+Sky is a native macOS app written in Swift, SwiftUI and AppKit, and uses Liquid Glass. It lives in the menu bar, has no Dock icon and never takes focus away from the app you're working in.
 
 ## What it does
 
 **The shelf**
 
 - A new screenshot drops onto a stack at the top of your main display and goes straight onto the clipboard, ready to paste. The stack hides itself a few seconds later.
+- A second or two later, Sky renames the new screenshot to a lowercase, hyphenated description of what it shows followed by when you took it, such as `add-expense-form-2026-11-15-21-11-41.png` in place of `Screenshot 2026-11-15 at 9.11.41 pm.png`. Its card keeps its place on the shelf, and if the screenshot is still on the clipboard, the clipboard follows the new name. If the name is taken, Sky adds `-2`, `-3` and so on.
 - Bring the shelf back at any time the way you'd bring up an auto-hiding Dock: rest the pointer against the middle of the top edge of your main display for a moment. Passing through on the way to a menu, or dragging a window up there, doesn't count.
 - Point at the stack to fan it out into a row of your most recent screenshots.
 - Point at a screenshot to see how old it is and to copy it, show it in Finder, move it to the Trash or take it off the shelf. Press C or ⌘C to copy the screenshot under the pointer. While the pointer is over the shelf it has keyboard focus, without bringing Sky to the front; it hands focus back as soon as the pointer leaves.
@@ -34,6 +35,7 @@ Sky is a native macOS app written in Swift, SwiftUI and AppKit, and uses Liquid 
 
 - Show or hide the shelf, clear it, or open your screenshots folder.
 - _Copy New Screenshots_ turns the automatic copy on or off.
+- _Name New Screenshots_ turns the renaming on or off. Describing what a screenshot shows needs Apple Intelligence; without it, or if the model can't describe one, the file is named `screenshot-` followed by the date and time.
 - _Show Shelf at Top Edge_ turns the top-edge reveal on or off.
 - _Keep Shelf Visible_ stops the shelf hiding itself.
 - _Skip macOS Floating Thumbnail_ turns off the small preview macOS shows in the corner after a capture. macOS waits for that thumbnail to go away (about five seconds) before it saves the file, so turning it off puts screenshots on the shelf straight away. This changes the same setting as the Options menu in the Screenshot app.
@@ -45,12 +47,13 @@ Sky watches the folder macOS saves screenshots to: the location chosen in the Sc
 
 A file counts as a screenshot when macOS has tagged it as a screen capture (the `kMDItemIsScreenCapture` metadata macOS writes on every capture). Sky doesn't rely on the file name, so it works in any language and with any naming or file format setting, and it ignores other images in the same folder.
 
-Sky reads your screenshots and never uploads them anywhere.
+Sky reads your screenshots and never uploads them anywhere. Names are made on your Mac by the Apple Intelligence model, from the image and the text Vision reads in it.
 
 ## Requirements
 
-- macOS 26 Tahoe or later
-- Xcode 26 or later (Swift 6.2 or later) to build
+- macOS 27 Golden Gate or later
+- Xcode 27 or later (Swift 6.4 or later) to build
+- Apple Intelligence, for naming new screenshots after what they show
 
 ## Build and run
 

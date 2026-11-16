@@ -22,6 +22,8 @@ final class PreviewState {
 
 enum PreviewCommand {
     case close, previous, next, copy, revealInFinder, openInDefaultApp, moveToTrash
+    /// The screenshot is being dragged out of the preview.
+    case dragStarted
 }
 
 /// How a panel opened from the shelf (the preview, or a thread) was
@@ -130,6 +132,13 @@ final class PreviewController: NSObject, NSWindowDelegate {
         }
     }
 
+    /// Keeps showing a screenshot whose file was renamed while it was open.
+    func screenshotRenamed(from old: ScreenshotRecord, to new: ScreenshotRecord) {
+        if state.record?.path == old.path {
+            state.record = new
+        }
+    }
+
     func show(_ record: ScreenshotRecord) {
         hideTask?.cancel()
         let panel = self.panel ?? makePanel()
@@ -229,6 +238,8 @@ final class PreviewController: NSObject, NSWindowDelegate {
         case .openInDefaultApp:
             operations.openInDefaultApp(record)
             close(.elsewhere)
+        case .dragStarted:
+            store.noteDragged(record)
         case .moveToTrash:
             let index = store.items.firstIndex { $0.path == record.path } ?? 0
             operations.moveToTrash(record) { [weak self] trashed in

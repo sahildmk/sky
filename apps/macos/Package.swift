@@ -1,9 +1,9 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.4
 import PackageDescription
 
 let package = Package(
     name: "Sky",
-    platforms: [.macOS(.v26)],
+    platforms: [.macOS(.v27)],
     dependencies: [
         // Global shortcuts that need no special permission, and the control for recording them.
         .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "3.1.0"),

@@ -46,7 +46,10 @@ struct PreviewView: View {
                         }
                         .shadow(color: .black.opacity(0.25), radius: 10, y: 4)
                         .onTapGesture(count: 2) { perform(.openInDefaultApp) }
-                        .onDrag { NSItemProvider(contentsOf: record.url) ?? NSItemProvider() }
+                        .onDrag {
+                            perform(.dragStarted)
+                            return NSItemProvider(contentsOf: record.url) ?? NSItemProvider()
+                        }
                 }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)

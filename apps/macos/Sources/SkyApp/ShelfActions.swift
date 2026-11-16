@@ -29,6 +29,16 @@ struct ScreenshotOperations {
         pasteboard.writeObjects([item])
     }
 
+    /// If the clipboard still holds `old` as copied by `copy`, copies `new` in
+    /// its place, so pasting the file after a rename doesn't paste a path
+    /// that no longer exists. Anything copied since is left alone.
+    func replaceOnClipboard(_ old: ScreenshotRecord, with new: ScreenshotRecord, pasteboard: NSPasteboard = .general) {
+        guard pasteboard.pasteboardItems?.count == 1,
+              pasteboard.string(forType: .fileURL) == old.url.absoluteString
+        else { return }
+        copy(new, to: pasteboard)
+    }
+
     /// Moves the file to the Trash and takes it off the shelf.
     func moveToTrash(_ record: ScreenshotRecord, then completion: @escaping @MainActor (Bool) -> Void = { _ in }) {
         NSWorkspace.shared.recycle([record.url]) { _, error in
@@ -101,10 +111,15 @@ struct ShelfActions {
     /// copy made from the keyboard, so the tick appears without a transition.
     func copy(_ record: ScreenshotRecord, animated: Bool = true) {
         operations.copy(record)
-        withAnimation(animated ? Motion.symbolSwap : nil) { state.copiedPath = record.path }
+        showCopied(record.path, animated: animated)
+    }
+
+    /// Shows the copied tick on the card at `path` for a moment.
+    func showCopied(_ path: String, animated: Bool) {
+        withAnimation(animated ? Motion.symbolSwap : nil) { state.copiedPath = path }
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(1.4))
-            if state.copiedPath == record.path {
+            if state.copiedPath == path {
                 withAnimation(Motion.hover) { state.copiedPath = nil }
             }
         }
@@ -112,6 +127,10 @@ struct ShelfActions {
 
     func moveToTrash(_ record: ScreenshotRecord) {
         operations.moveToTrash(record)
+    }
+
+    func noteDragged(_ record: ScreenshotRecord) {
+        store.noteDragged(record)
     }
 
     func removeFromShelf(_ record: ScreenshotRecord) {

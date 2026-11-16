@@ -24,6 +24,13 @@ public struct ScreenshotRecord: Hashable, Sendable {
     public var path: String { url.path }
 }
 
+/// Which file a path names: its volume and inode. It stays the same when the
+/// file is renamed or moved within its volume.
+public struct FileIdentity: Hashable, Sendable {
+    public let device: UInt64
+    public let inode: UInt64
+}
+
 /// Recognises screenshots by the metadata macOS writes onto them, so detection
 /// works regardless of the user's language, file naming or file format.
 public enum ScreenshotFiles {
@@ -62,6 +69,13 @@ public enum ScreenshotFiles {
               let value = try? PropertyListSerialization.propertyList(from: data, format: nil)
         else { return false }
         return (value as? Bool) ?? (value as? NSNumber)?.boolValue ?? false
+    }
+
+    /// The identity of the file at `url`, or nil if there is no file there.
+    public static func identity(of url: URL) -> FileIdentity? {
+        var info = stat()
+        guard stat(url.path, &info) == 0 else { return nil }
+        return FileIdentity(device: UInt64(bitPattern: Int64(info.st_dev)), inode: UInt64(info.st_ino))
     }
 
     /// Reads a screenshot's creation date and pixel size. Nil when the file is not a screenshot.

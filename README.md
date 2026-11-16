@@ -41,7 +41,7 @@ The landing page includes a responsive product demo, screenshot previews, keyboa
 
 ## macOS app
 
-Requires macOS 26+ and Xcode 26+ (Swift 6.2+). Node and Bun are optional for native-only development.
+Requires macOS 27+ and Xcode 27+ (Swift 6.4+). Node and Bun are optional for native-only development.
 
 ```sh
 ./scripts/build-app.sh                  # universal, signed ad hoc

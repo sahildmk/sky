@@ -219,6 +219,20 @@ final class ShelfController: NSObject, NSWindowDelegate {
         actions.copy(record)
     }
 
+    /// Keeps the selection and the copied tick on a screenshot whose file was renamed.
+    func screenshotRenamed(from old: ScreenshotRecord, to new: ScreenshotRecord) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            if state.selected == .screenshot(path: old.path) {
+                state.selected = .screenshot(path: new.path)
+            }
+        }
+        if state.copiedPath == old.path {
+            actions.showCopied(new.path, animated: false)
+        }
+    }
+
     private func placePanel() {
         guard let screen = NSScreen.screens.first else { return }
         let frame = NSRect(
