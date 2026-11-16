@@ -7,7 +7,6 @@ import {
   Code2,
   Keyboard,
   LockKeyhole,
-  MoveUpRight,
   Plus,
   Scan,
   Sparkles,
@@ -26,11 +25,11 @@ const questions = [
   ],
   [
     'Where do my screenshots go?',
-    'Exactly where they go today. Sky follows the screenshot location in macOS and gives your recent captures a more convenient home on screen. Your files stay on your Mac.',
+    'Where macOS already saves them. Sky reads that folder and shows your recent captures on the shelf. Your files stay on your Mac.',
   ],
   [
     'Does Sky upload anything?',
-    'No. Sky reads your local screenshots and never uploads them anywhere. There’s no account to create and no cloud storage to configure.',
+    'No. Sky never uploads your screenshots, and there’s no account to create.',
   ],
   [
     'Which Macs does Sky work on?',
@@ -38,7 +37,7 @@ const questions = [
   ],
   [
     'Is Sky really free?',
-    'Yes. Sky is free and open source under the MIT license. You can explore the code, build the app, and make it your own on GitHub.',
+    'Yes. Sky is open source under the MIT license, and the code is on GitHub.',
   ],
 ] as const
 
@@ -60,7 +59,7 @@ function LandingPage() {
         </a>
         <nav aria-label="Main navigation">
           <a href="#how-it-works">How it works</a>
-          <a href="#details">The little details</a>
+          <a href="#details">Details</a>
           <a
             href="https://github.com/sahildmk/sky"
             target="_blank"
@@ -77,20 +76,15 @@ function LandingPage() {
       </header>
       <main id="main">
         <section className="hero page-width" aria-labelledby="hero-title">
-          <div className="release-note">
-            <span className="live-dot" />A little utility for your Mac
-            <span className="release-separator">/</span>
-            <span>Free & open source</span>
-          </div>
           <h1 id="hero-title">
-            Your screenshots.
+            Stop digging for screenshots.
             <br />
-            <span>A little more at home.</span>
+            <span>Keep them on a shelf.</span>
           </h1>
           <p className="hero-description">
-            Meet Sky. A quiet little shelf that keeps your screenshots
-            <br className="desktop-break" /> close, so you can capture, grab,
-            and carry on.
+            Sky puts every new screenshot on a shelf at the top of your
+            <br className="desktop-break" /> screen, ready to drag, paste, or
+            preview.
           </p>
           <div className="hero-actions">
             <button className="button button-dark" onClick={getSky}>
@@ -104,26 +98,26 @@ function LandingPage() {
             </a>
           </div>
           <p className="compatibility">
-            Made for macOS 26+<span>·</span>All yours. Always local.
+            Free and open source<span>·</span>macOS 26 or later
           </p>
           <ShelfDemo />
         </section>
         <div className="quiet-benefits page-width">
           <span>
             <Check size={14} />
-            Your shortcuts, unchanged
+            Your usual shortcuts
           </span>
           <span>
             <Check size={14} />
-            Ready to paste
+            Copied on capture
           </span>
           <span>
             <Check size={14} />
-            No accounts. No uploads.
+            No account, no uploads
           </span>
           <span>
             <Check size={14} />
-            Native to your Mac
+            Native Mac app
           </span>
         </div>
         <section
@@ -133,20 +127,13 @@ function LandingPage() {
         >
           <div className="section-heading">
             <div>
-              <p className="eyebrow">LESS FRICTION, MORE FLOW</p>
+              <p className="eyebrow">How it works</p>
               <h2 id="how-title">
                 From screenshot to
                 <br />
                 where you need it.
               </h2>
             </div>
-            <p>
-              No new habits. No folder archaeology.
-              <br />
-              Just a small improvement to something
-              <br />
-              you do every day.
-            </p>
           </div>
           <div className="steps">
             <article>
@@ -163,8 +150,7 @@ function LandingPage() {
                 <h3>Capture as usual.</h3>
               </div>
               <p>
-                Your muscle memory stays. Take a screenshot with the Mac
-                shortcuts you already know.
+                Take a screenshot with ⇧⌘3, ⇧⌘4, or ⇧⌘5, the way you already do.
               </p>
             </article>
             <article>
@@ -180,12 +166,9 @@ function LandingPage() {
               </div>
               <div className="step-title">
                 <span>02</span>
-                <h3>It’s already there.</h3>
+                <h3>It lands on the shelf.</h3>
               </div>
-              <p>
-                A new capture lands on your shelf and copies to your clipboard.
-                Ready when you are.
-              </p>
+              <p>Sky adds it to the shelf and copies it to your clipboard.</p>
             </article>
             <article>
               <div className="step-visual drag-visual">
@@ -200,11 +183,11 @@ function LandingPage() {
               </div>
               <div className="step-title">
                 <span>03</span>
-                <h3>Grab it. Carry on.</h3>
+                <h3>Drag, paste, or preview.</h3>
               </div>
               <p>
-                Drag it into a message, paste it into a doc, or open a quick
-                preview. Back to your day.
+                Drag it into a message, paste it into a doc, or press Space to
+                look closer.
               </p>
             </article>
           </div>
@@ -216,26 +199,22 @@ function LandingPage() {
         >
           <div className="section-heading">
             <div>
-              <p className="eyebrow">SMALL BY DESIGN</p>
+              <p className="eyebrow">Details</p>
               <h2 id="details-title">
-                The little things.
+                Small app.
                 <br />
-                Thought all the way through.
+                Careful details.
               </h2>
             </div>
-            <span className="handwritten">
-              Just enough. Never in the way.
-              <MoveUpRight size={19} strokeWidth={1} />
-            </span>
           </div>
           <div className="details-grid">
             <article className="keyboard-card">
               <div className="feature-copy">
                 <Keyboard size={21} strokeWidth={1.5} />
-                <h3>A shortcut to your shortcuts.</h3>
+                <h3>Keyboard first.</h3>
                 <p>
-                  Bring up the shelf from anywhere. Preview, copy, and move on
-                  without lifting a finger from the keyboard.
+                  Open the shelf from any app, then preview and copy without
+                  touching the mouse.
                 </p>
               </div>
               <div className="keyboard-ui">
@@ -243,7 +222,7 @@ function LandingPage() {
                   <kbd>⇧</kbd>
                   <kbd>⌘</kbd>
                   <kbd>6</kbd>
-                  <span>At your fingertips.</span>
+                  <span>Open the shelf</span>
                 </div>
                 <div className="keyboard-actions">
                   <span>
@@ -261,31 +240,23 @@ function LandingPage() {
             </article>
             <article className="privacy-card">
               <LockKeyhole size={22} strokeWidth={1.5} />
-              <h3>
-                On your Mac.
-                <br />
-                And only your Mac.
-              </h3>
+              <h3>Stays on your Mac.</h3>
               <p>
-                Your screenshots are yours. Sky never uploads them anywhere. No
-                account, no cloud, no fuss.
+                Sky never uploads your screenshots, and there’s no account to
+                create.
               </p>
               <div className="local-badge">
                 <span className="live-dot" />
-                100% local. A little peace of mind.
+                Works offline
               </div>
             </article>
             <article className="native-card">
               <div>
                 <Sparkles size={22} strokeWidth={1.5} />
-                <h3>
-                  Feels like it belongs.
-                  <br />
-                  Because it does.
-                </h3>
+                <h3>A native Mac app.</h3>
                 <p>
-                  Built with Swift and SwiftUI. At home in your menu bar, with
-                  Liquid Glass on macOS 26.
+                  Built with Swift and SwiftUI, with Liquid Glass on macOS 26.
+                  It lives in your menu bar.
                 </p>
               </div>
               <div className="native-art" aria-hidden="true">
@@ -301,13 +272,10 @@ function LandingPage() {
                 </div>
               </div>
               <div>
-                <h3>
-                  Out of sight.
-                  <br />A moment away.
-                </h3>
+                <h3>Hidden until you need it.</h3>
                 <p>
                   The shelf tucks itself away. Rest your pointer at the top edge
-                  of your screen to bring it back.
+                  of the screen to bring it back.
                 </p>
               </div>
             </article>
@@ -318,9 +286,8 @@ function LandingPage() {
           aria-labelledby="faq-title"
         >
           <div>
-            <p className="eyebrow">A FEW THINGS YOU MIGHT WONDER</p>
-            <h2 id="faq-title">Good questions.</h2>
-            <p>A small app. No big mysteries.</p>
+            <p className="eyebrow">FAQ</p>
+            <h2 id="faq-title">Before you install.</h2>
           </div>
           <div className="faq-list">
             {questions.map(([question, answer]) => (
@@ -336,20 +303,17 @@ function LandingPage() {
         </section>
         <section className="final-cta page-width" aria-labelledby="cta-title">
           <SkyMark />
-          <p className="eyebrow">A LITTLE SPACE GOES A LONG WAY</p>
           <h2 id="cta-title">
-            Less looking.
-            <br />
-            More doing.
+            Give your screenshots
+            <br />a place to land.
           </h2>
-          <p>Give your screenshots a place to land.</p>
           <button className="button button-dark" onClick={getSky}>
             <AppleIcon />
             Get Sky for Mac
             <ArrowDownToLine size={16} />
           </button>
           <span className="compatibility">
-            Free & open source. Made for your Mac.
+            Free and open source. macOS 26 or later.
           </span>
           <div className="cta-cloud cta-cloud-left" />
           <div className="cta-cloud cta-cloud-right" />
@@ -360,7 +324,7 @@ function LandingPage() {
           <SkyMark />
           <span>sky</span>
         </a>
-        <span>A little home for your screenshots.</span>
+        <span>A shelf for your screenshots.</span>
         <div>
           <a
             href="https://github.com/sahildmk/sky"
@@ -380,7 +344,6 @@ function LandingPage() {
             <ArrowUpRight size={12} />
           </a>
         </div>
-        <p>Made with care for the Mac.</p>
       </footer>
       <InstallDialog ref={install} />
     </>

@@ -5,7 +5,6 @@ import {
   Check,
   Copy,
   Expand,
-  MousePointer2,
   X,
 } from 'lucide-react'
 import { useRef, useState } from 'react'
@@ -96,9 +95,6 @@ export function ShelfDemo() {
           </div>
           <div className="wallpaper-cloud cloud-one" />
           <div className="wallpaper-cloud cloud-two" />
-          <div className="desktop-greeting" aria-hidden="true">
-            Room to think.
-          </div>
           <div className="shelf-zone">
             <div
               className="demo-shelf"
@@ -121,24 +117,14 @@ export function ShelfDemo() {
               ))}
             </div>
             <div className="shelf-caption">
-              <span className="status-dot" />3 screenshots. Right at hand.
+              <span className="status-dot" />3 screenshots
             </div>
-          </div>
-          <div className="demo-hint" aria-hidden="true">
-            <MousePointer2 size={17} />
-            <span>
-              A little shelf.
-              <br />A lot less searching.
-            </span>
-          </div>
-          <div className="desktop-bottom">
-            <span>YOUR DESKTOP, WITH A LITTLE MORE SPACE.</span>
-            <span>SKY FOR MAC</span>
           </div>
         </div>
         <div className="demo-controls">
           <span>
-            <span className="live-dot" />A little preview of Sky
+            <span className="live-dot" />
+            Interactive demo
           </span>
           <button
             className="text-button"
@@ -150,7 +136,7 @@ export function ShelfDemo() {
             <ArrowDown size={15} className={pinned ? 'flipped' : ''} />
           </button>
           <span className="demo-desktop-note">
-            Hover to unfold. Click to explore.
+            Hover to open. Click a screenshot to preview it.
           </span>
         </div>
       </div>
