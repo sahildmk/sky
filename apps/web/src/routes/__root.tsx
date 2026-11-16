@@ -11,21 +11,20 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'Sky — A little home for your screenshots' },
+      { title: 'Sky: a shelf for your screenshots' },
       {
         name: 'description',
         content:
-          'Your screenshots, right where you need them. Sky is a free, open-source macOS app that keeps your recent captures in a quiet shelf at the top of your screen.',
+          'Sky is a free, open-source Mac app that keeps your recent screenshots on a shelf at the top of your screen.',
       },
       { name: 'theme-color', content: '#f8fafb' },
       {
         property: 'og:title',
-        content: 'Sky — A little home for your screenshots',
+        content: 'Sky: a shelf for your screenshots',
       },
       {
         property: 'og:description',
-        content:
-          'Capture. Grab. Carry on. A free, native screenshot shelf for your Mac.',
+        content: 'A free, native screenshot shelf for your Mac.',
       },
       { property: 'og:type', content: 'website' },
     ],

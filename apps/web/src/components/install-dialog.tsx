@@ -38,11 +38,10 @@ export const InstallDialog = forwardRef<HTMLDialogElement>(
           </button>
         </form>
         <SkyMark />
-        <p className="eyebrow">A LITTLE HOME ON YOUR MAC</p>
-        <h2 id="install-title">Make room for Sky.</h2>
+        <p className="eyebrow">Install</p>
+        <h2 id="install-title">Build Sky from source.</h2>
         <p>
-          Sky is free and open source. While we get a packaged release ready,
-          you can build it yourself.
+          There’s no packaged release yet, so for now you build it yourself.
         </p>
         <div className="install-requirements">
           <span>macOS 26 or later</span>
