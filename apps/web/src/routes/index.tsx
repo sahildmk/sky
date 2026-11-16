@@ -34,7 +34,7 @@ const questions = [
   ],
   [
     'Which Macs does Sky work on?',
-    'Sky runs on macOS 14 Sonoma or later, on Apple silicon and Intel Macs. Liquid Glass is available on macOS 26 or later. Building from source requires Xcode 26 or later.',
+    'Sky runs on macOS 26 Tahoe or later, on Apple silicon and Intel Macs. Building from source requires Xcode 26 or later.',
   ],
   [
     'Is Sky really free?',
@@ -104,7 +104,7 @@ function LandingPage() {
             </a>
           </div>
           <p className="compatibility">
-            Made for macOS 14+<span>·</span>All yours. Always local.
+            Made for macOS 26+<span>·</span>All yours. Always local.
           </p>
           <ShelfDemo />
         </section>

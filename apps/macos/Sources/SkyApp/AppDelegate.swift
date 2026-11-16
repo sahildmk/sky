@@ -18,9 +18,12 @@ public enum SkyApplication {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let store = ShelfStore()
+    private let threads = ThreadsStore(client: .fromEnvironment())
     private lazy var preview = PreviewController(store: store)
-    private lazy var shelf = ShelfController(store: store, preview: preview)
+    private lazy var threadPanel = ThreadPanelController(threads: threads)
+    private lazy var shelf = ShelfController(store: store, threads: threads, preview: preview, threadPanel: threadPanel)
     private let settings = SettingsWindowController()
+    private lazy var naming = NewScreenshotNaming(store: store)
     private var watcher: DirectoryWatcher?
     private var statusItem: NSStatusItem?
     private var locationCheck: Timer?
@@ -34,7 +37,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 self.shelf.copy(record)
             }
             self.shelf.show()
+            self.naming.name(record)
         }
+        store.onRename = { [weak self] old, new in
+            guard let self else { return }
+            ScreenshotOperations(store: self.store).replaceOnClipboard(old, with: new)
+            self.shelf.screenshotRenamed(from: old, to: new)
+            self.preview.screenshotRenamed(from: old, to: new)
+        }
+        naming.prewarm()
         watch(ScreenshotLocation.current())
         installStatusItem()
         shelf.startWatchingTopEdge()
@@ -95,6 +106,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         copyNew.toolTip = "Put each new screenshot on the clipboard as soon as it's saved."
         menu.addItem(copyNew)
 
+        let nameNew = item("Name New Screenshots", action: #selector(toggleNameNew), key: "")
+        nameNew.state = NewScreenshotNaming.isEnabled ? .on : .off
+        nameNew.toolTip = NewScreenshotNaming.isAvailable
+            ? "Rename each new screenshot after what it shows, with its date and time, such as add-expense-form-2026-11-15-21-11-41.png. Names are made on this Mac with Apple Intelligence."
+            : "Rename each new screenshot with its date and time, such as screenshot-2026-11-15-21-11-41.png. Turn on Apple Intelligence to name it after what it shows."
+        menu.addItem(nameNew)
+
         let topEdge = item("Show Shelf at Top Edge", action: #selector(toggleTopEdge), key: "")
         topEdge.state = shelf.revealsAtTopEdge ? .on : .off
         topEdge.toolTip = "Rest the pointer against the middle of the top edge of your main display to bring the shelf down."
@@ -142,6 +160,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func toggleCopyNew() {
         copiesNewScreenshots.toggle()
+    }
+
+    @objc private func toggleNameNew() {
+        NewScreenshotNaming.isEnabled.toggle()
+        naming.prewarm()
     }
 
     @objc private func toggleTopEdge() {

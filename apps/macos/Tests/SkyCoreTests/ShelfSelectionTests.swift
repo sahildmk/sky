@@ -25,8 +25,9 @@ import Testing
 
     @Test func selectionNeverReachesCardsThatDidNotFit() {
         let layout = ShelfLayout.make(aspectRatios: Array(repeating: 1.6, count: 12), containerWidth: 900, expanded: true)
-        #expect(layout.visibleCount > 0 && layout.visibleCount < 12)
-        let last = layout.visibleCount - 1
-        #expect(ShelfSelection.moved(from: last, by: 1, visibleCount: layout.visibleCount) == last)
+        let visibleCount = layout.visibleIndices.count
+        #expect(visibleCount > 0 && visibleCount < 12)
+        let last = visibleCount - 1
+        #expect(ShelfSelection.moved(from: last, by: 1, visibleCount: visibleCount) == last)
     }
 }

@@ -111,7 +111,10 @@ struct ScreenshotCard: View {
         }
         .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .onTapGesture { actions.open(record) }
-        .onDrag { NSItemProvider(contentsOf: record.url) ?? NSItemProvider() }
+        .onDrag {
+            actions.noteDragged(record)
+            return NSItemProvider(contentsOf: record.url) ?? NSItemProvider()
+        }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Screenshot \(record.url.deletingPathExtension().lastPathComponent)")
         .accessibilityAddTraits(.isButton)

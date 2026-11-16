@@ -20,6 +20,10 @@
       ]
     },
     "typecheck": {
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": []
+    },
+    "@sky/web#typecheck": {
       "inputs": ["$TURBO_DEFAULT$", "!src/routeTree.gen.ts"],
       "outputs": ["src/routeTree.gen.ts"]
     },

@@ -100,4 +100,78 @@ import Testing
         #expect(abs(layout.activeRect.midX - width / 2) < 0.001)
         #expect(layout.activeRect.width > metrics.emptySize.width)
     }
+
+    // MARK: Sections
+
+    let threadRatio: CGFloat = 5.0 / 3.0
+
+    @Test func sectionsSitSideBySideWithAWiderGap() {
+        let layout = ShelfLayout.make(sections: [[1.6, 1.6], [threadRatio, threadRatio]], containerWidth: width, expanded: true)
+
+        let frames = layout.cards.map(\.frame)
+        #expect(layout.cards.allSatisfy { $0.isVisible })
+        #expect(frames[1].minX - frames[0].maxX == metrics.spacing)
+        #expect(frames[2].minX - frames[1].maxX == metrics.sectionGap)
+        #expect(frames[3].minX - frames[2].maxX == metrics.spacing)
+        let rowMid = (frames.first!.minX + frames.last!.maxX) / 2
+        #expect(abs(rowMid - width / 2) < 0.001)
+    }
+
+    @Test func manyScreenshotsLeaveRoomForThreads() {
+        // Two threads need less than half the row, so both are promised room.
+        let layout = ShelfLayout.make(
+            sections: [Array(repeating: 1.6, count: 12), Array(repeating: threadRatio, count: 2)],
+            containerWidth: width, expanded: true
+        )
+
+        #expect(layout.cards.suffix(2).allSatisfy { $0.isVisible })
+        #expect(!layout.cards.prefix(12).allSatisfy { $0.isVisible })
+        let visible = layout.cards.filter(\.isVisible).map(\.frame)
+        #expect(visible.last!.maxX - visible.first!.minX <= metrics.maxRowWidth)
+    }
+
+    @Test func aSectionGetsNoMoreThanItsShareWhileOthersWait() {
+        // Three threads would need more than half the row, so they share it
+        // equally with the screenshots and the last one waits.
+        let layout = ShelfLayout.make(
+            sections: [Array(repeating: 1.6, count: 12), Array(repeating: threadRatio, count: 3)],
+            containerWidth: width, expanded: true
+        )
+
+        let threads = layout.cards.suffix(3).map(\.isVisible)
+        #expect(threads == [true, true, false])
+    }
+
+    @Test func hiddenCardsAreNotOnlyAtTheEnd() {
+        let layout = ShelfLayout.make(
+            sections: [Array(repeating: 1.6, count: 12), [threadRatio]],
+            containerWidth: 900, expanded: true
+        )
+
+        let visible = layout.visibleIndices
+        #expect(visible.contains(12))
+        #expect(visible.count < 13)
+        // A hidden screenshot tucks behind the last visible screenshot, not behind the thread.
+        let lastScreenshot = visible.dropLast().last!
+        let hidden = layout.cards[lastScreenshot + 1]
+        #expect(hidden.frame.maxX == layout.cards[lastScreenshot].frame.maxX)
+    }
+
+    @Test func collapsedSectionsAreDecksSideBySide() {
+        let layout = ShelfLayout.make(sections: [[1.6, 1.6, 1.6], [threadRatio, threadRatio]], containerWidth: width, expanded: false)
+
+        let screenshotsTop = layout.cards[0].frame
+        let threadsTop = layout.cards[3].frame
+        #expect(threadsTop.minX - screenshotsTop.maxX == metrics.sectionGap)
+        #expect(abs((screenshotsTop.minX + threadsTop.maxX) / 2 - width / 2) < 0.001)
+        // Each deck stacks downwards from its own top card.
+        #expect(layout.cards[4].frame.minX == threadsTop.minX)
+        #expect(layout.cards[4].frame.minY > threadsTop.minY)
+    }
+
+    @Test func anEmptySectionTakesNoSpace() {
+        let alone = ShelfLayout.make(sections: [[], [threadRatio]], containerWidth: width, expanded: true)
+        let same = ShelfLayout.make(aspectRatios: [threadRatio], containerWidth: width, expanded: true)
+        #expect(alone == same)
+    }
 }

@@ -22,12 +22,15 @@ final class PreviewState {
 
 enum PreviewCommand {
     case close, previous, next, copy, revealInFinder, openInDefaultApp, moveToTrash
+    /// The screenshot is being dragged out of the preview.
+    case dragStarted
 }
 
-/// How the preview was dismissed, which decides where keyboard focus goes next.
-enum PreviewDismissal {
+/// How a panel opened from the shelf (the preview, or a thread) was
+/// dismissed, which decides where keyboard focus goes next.
+enum PanelDismissal {
     /// Esc, Space, the close button, or the card clicked again: focus goes
-    /// back to the shelf the preview was opened from.
+    /// back to the shelf the panel was opened from.
     case backToShelf
     /// A click in another app, or a command that opens one (Finder, the
     /// default app): focus stays with that app.
@@ -112,7 +115,7 @@ final class PreviewController: NSObject, NSWindowDelegate {
 
     /// Called as the preview closes, with the screenshot it was showing and
     /// how it was dismissed.
-    var onClose: ((ScreenshotRecord?, PreviewDismissal) -> Void)?
+    var onClose: ((ScreenshotRecord?, PanelDismissal) -> Void)?
 
     var isOpen: Bool { state.isVisible }
 
@@ -126,6 +129,13 @@ final class PreviewController: NSObject, NSWindowDelegate {
             close(.backToShelf)
         } else {
             show(record)
+        }
+    }
+
+    /// Keeps showing a screenshot whose file was renamed while it was open.
+    func screenshotRenamed(from old: ScreenshotRecord, to new: ScreenshotRecord) {
+        if state.record?.path == old.path {
+            state.record = new
         }
     }
 
@@ -163,7 +173,7 @@ final class PreviewController: NSObject, NSWindowDelegate {
 
     /// Closes the preview. A close from the keyboard is instant: it happens
     /// often, and an animation would only make the key feel slow.
-    func close(_ dismissal: PreviewDismissal, animated: Bool = true) {
+    func close(_ dismissal: PanelDismissal, animated: Bool = true) {
         guard state.isVisible else { return }
         stopWatchingForOutsideClicks()
         hideTask?.cancel()
@@ -228,6 +238,8 @@ final class PreviewController: NSObject, NSWindowDelegate {
         case .openInDefaultApp:
             operations.openInDefaultApp(record)
             close(.elsewhere)
+        case .dragStarted:
+            store.noteDragged(record)
         case .moveToTrash:
             let index = store.items.firstIndex { $0.path == record.path } ?? 0
             operations.moveToTrash(record) { [weak self] trashed in

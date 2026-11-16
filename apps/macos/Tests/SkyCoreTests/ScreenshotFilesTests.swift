@@ -31,6 +31,22 @@ import UniformTypeIdentifiers
         #expect(ScreenshotFiles.record(for: viaLink)?.path == ScreenshotFiles.record(for: url)?.path)
     }
 
+    @Test func aFileKeepsItsIdentityWhenRenamed() throws {
+        let url = try makeImage("Before.png", markedAsScreenCapture: true)
+        let before = try #require(ScreenshotFiles.identity(of: url))
+        let renamed = directory.appendingPathComponent("after.png")
+        try FileManager.default.moveItem(at: url, to: renamed)
+
+        #expect(ScreenshotFiles.identity(of: renamed) == before)
+        #expect(ScreenshotFiles.identity(of: url) == nil)
+    }
+
+    @Test func differentFilesHaveDifferentIdentities() throws {
+        let first = try makeImage("One.png", markedAsScreenCapture: true)
+        let second = try makeImage("Two.png", markedAsScreenCapture: true)
+        #expect(ScreenshotFiles.identity(of: first) != ScreenshotFiles.identity(of: second))
+    }
+
     @Test func ignoresAnImageWithoutTheScreenCaptureMark() throws {
         let url = try makeImage("Photo.png", markedAsScreenCapture: false)
         #expect(ScreenshotFiles.record(for: url) == nil)

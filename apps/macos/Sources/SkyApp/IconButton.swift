@@ -33,16 +33,12 @@ struct IconButton: View {
                 }
                 .contentShape(Circle())
         }
-        .buttonStyle(PressableStyle(shrinks: !(standalone && Self.hasInteractiveGlass)))
+        // Standalone buttons sit on interactive glass, which answers presses itself.
+        .buttonStyle(PressableStyle(shrinks: !standalone))
         .modifier(StandaloneGlass(isOn: standalone))
         .onHover { isHovered = $0 }
         .help(label)
         .accessibilityLabel(label)
-    }
-
-    /// Interactive glass answers presses itself on macOS 26 and later.
-    private static var hasInteractiveGlass: Bool {
-        if #available(macOS 26, *) { true } else { false }
     }
 }
 

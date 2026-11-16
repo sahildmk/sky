@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import OSLog
 import SkyCore
 import SwiftUI
 
@@ -22,9 +23,14 @@ final class ShelfStore {
     /// Called after a newly captured screenshot lands on the shelf.
     @ObservationIgnored var onNewScreenshot: ((ScreenshotRecord) -> Void)?
 
+    /// Called after `rename` moves a screenshot, with its old and new records.
+    @ObservationIgnored var onRename: ((ScreenshotRecord, ScreenshotRecord) -> Void)?
+
     @ObservationIgnored private var removedPaths: Set<String>
     @ObservationIgnored private var pendingPaths: Set<String> = []
+    @ObservationIgnored private var draggedPaths: Set<String> = []
     private static let removedPathsKey = "removedPaths"
+    private nonisolated static let log = Logger(subsystem: "com.sahildmk.sky", category: "shelf")
 
     init() {
         removedPaths = Set(UserDefaults.standard.stringArray(forKey: Self.removedPathsKey) ?? [])
@@ -41,8 +47,11 @@ final class ShelfStore {
     func load(from directory: URL) {
         let excluded = removedPaths
         Task.detached(priority: .userInitiated) {
-            let records = ScreenshotFiles.recent(in: directory, limit: Self.capacity, excludingPaths: excluded)
+            let listed = ScreenshotFiles.recent(in: directory, limit: Self.capacity, excludingPaths: excluded)
             await MainActor.run {
+                // A screenshot renamed while the folder was being read is
+                // listed under a path that no longer exists.
+                let records = listed.filter { FileManager.default.fileExists(atPath: $0.path) }
                 self.items = records
                 self.thumbnails = self.thumbnails.filter { path, _ in records.contains { $0.path == path } }
                 records.forEach(self.loadThumbnail)
@@ -103,6 +112,53 @@ final class ShelfStore {
         if items.contains(where: { $0.path == record.path }) {
             onNewScreenshot?(record)
         }
+    }
+
+    /// Records that a screenshot was dragged out of Sky. The drop reads the
+    /// file at its current path, so `rename` leaves it alone from then on.
+    func noteDragged(_ record: ScreenshotRecord) {
+        draggedPaths.insert(record.path)
+    }
+
+    /// Renames a screenshot on the shelf to `stem`, keeping its extension and
+    /// adding a number if the name is taken. Its card keeps its place.
+    ///
+    /// Does nothing if the screenshot is off the shelf, its file is gone, or
+    /// it has been dragged somewhere.
+    func rename(_ record: ScreenshotRecord, to stem: String) {
+        guard let index = items.firstIndex(where: { $0.path == record.path }),
+              FileManager.default.fileExists(atPath: record.path),
+              !draggedPaths.contains(record.path)
+        else { return }
+        let destination = ScreenshotNaming.destination(
+            stem: stem, pathExtension: record.url.pathExtension, in: record.url.deletingLastPathComponent()
+        ) { FileManager.default.fileExists(atPath: $0.path) }
+        do {
+            try FileManager.default.moveItem(at: record.url, to: destination)
+        } catch {
+            Self.log.error("Couldn't rename \(record.url.lastPathComponent, privacy: .public): \(error, privacy: .public)")
+            return
+        }
+
+        // The card moves to its new path before the file system reports the
+        // rename, so that event finds it already on the shelf.
+        let renamed = ScreenshotRecord(
+            url: ScreenshotFiles.canonical(destination),
+            createdAt: record.createdAt,
+            pixelWidth: record.pixelWidth,
+            pixelHeight: record.pixelHeight
+        )
+        let thumbnail = thumbnails.removeValue(forKey: record.path)
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            items[index] = renamed
+            thumbnails[renamed.path] = thumbnail
+        }
+        // A thumbnail still loading under the old path is discarded when it
+        // arrives, so load it again under the new one.
+        if thumbnail == nil { loadThumbnail(renamed) }
+        onRename?(record, renamed)
     }
 
     /// Takes a screenshot off the shelf without touching the file. It stays off

@@ -45,7 +45,7 @@ export const InstallDialog = forwardRef<HTMLDialogElement>(
           you can build it yourself.
         </p>
         <div className="install-requirements">
-          <span>macOS 14 or later</span>
+          <span>macOS 26 or later</span>
           <span>Xcode 26 or later</span>
         </div>
         <div className="code-block">
